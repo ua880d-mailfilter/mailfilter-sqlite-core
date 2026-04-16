@@ -21,7 +21,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <sstream>
-#include "dblog.hh"
+#include "db/dblog.hh"
 #include "header.hh"
 #include "preferences.hh"
 #include "mailfilter.hh"

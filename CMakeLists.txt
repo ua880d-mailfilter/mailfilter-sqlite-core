@@ -39,7 +39,13 @@ target_include_directories(mailfilter_sqlite_core
         ${MF_INCLUDE_DIR}
     PRIVATE
         ${MF_COMPAT_DIR}
+        ${MF_CORE_DIR}
         ${MF_CORE_DIR}/api
+        ${MF_CORE_DIR}/db
+        ${MF_CORE_DIR}/header
+        ${MF_CORE_DIR}/rules
+        ${MF_CORE_DIR}/config
+        ${MF_CORE_DIR}/parser
         ${MF_CORE_DIR}/import
 )
 

@@ -4,11 +4,9 @@
 
 #include <string>
 #include <sstream>
-#include <iostream>
+
 #include "dblog.hh"
-#include "preferences.hh"
 #include "feedback.hh"
-#include "mailfilter.hh"
 
 #ifdef USE_SQLITE3_HEADERLOG
 #include <sqlite3.h>
