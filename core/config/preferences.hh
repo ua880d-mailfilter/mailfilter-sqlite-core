@@ -88,6 +88,13 @@ public:
   void set_reg_type (const char*);
   int  reg_type (void);
 
+  void set_server (const char*);
+  void set_usr (const char*);
+  void set_passwd (const char*);
+  void set_protocol (const char*);
+  void set_connection (unsigned int = 0);
+  void set_port (unsigned int);
+
   unsigned int time_out (void);
   void         set_time_out (unsigned int);
 

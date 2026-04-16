@@ -345,6 +345,12 @@ void Preferences :: set_reg_type (const char* new_type)
 int Preferences :: reg_type (void)
 { return rreg_type; }
 
+void Preferences :: set_server (const char*) {}
+void Preferences :: set_usr (const char*) {}
+void Preferences :: set_passwd (const char*) {}
+void Preferences :: set_protocol (const char*) {}
+void Preferences :: set_connection (unsigned int) {}
+void Preferences :: set_port (unsigned int) {}
 
 bool Preferences :: delete_duplicates (void)
 {  return del_duplicates; }
