@@ -2,24 +2,31 @@ name: core-ci
 
 on:
   push:
+    branches: [ "main", "master" ]
   pull_request:
 
 jobs:
-  build:
+  build-core:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Repository auschecken
         uses: actions/checkout@v4
 
-      - name: Install build deps
+      - name: Build-Werkzeuge installieren
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build g++ libsqlite3-dev
+          sudo apt-get install -y cmake ninja-build build-essential pkg-config libsqlite3-dev
 
-      - name: Configure
-        run: |
-          cmake -S . -B build -G Ninja
+      - name: Build-Verzeichnis anlegen
+        run: cmake -S . -B build -G Ninja
 
-      - name: Build
-        run: |
-          cmake --build build
+      - name: Core bauen
+        run: cmake --build build --verbose
+
+      - name: Build-Artefakte hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-build-linux
+          path: |
+            build
