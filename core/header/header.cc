@@ -23,7 +23,7 @@
 #include <sstream>
 #include "db/dblog.hh"
 #include "header.hh"
-#include "preferences.hh"
+#include "config/preferences.hh"
 #include "mailfilter.hh"
 #include "defines.hh"
 #include "feedback.hh"
