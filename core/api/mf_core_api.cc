@@ -70,6 +70,20 @@ mf_error_t mf_get_version(mf_version_t *out_version) {
     return MF_OK;
 }
 
+static mf_import_options_t mf_default_import_options() {
+    mf_import_options_t opts{};
+    opts.target_db_path = nullptr;
+    opts.schema_from_db_path = nullptr;
+    opts.id_prefix = "imp-";
+    opts.start_serial = 1;
+    opts.decision = "imported";
+    opts.reset_target_db = 0;
+    opts.analyze_after_import = 0;
+    opts.fill_rule_hits = 0;
+    opts.dry_run = 0;
+    return opts;
+}
+
 mf_error_t mf_analyze_header_text(const char *raw_headers, mf_result_t *out_result) {
     if (!g_initialized) return MF_ERR_NOT_INITIALIZED;
     if (!raw_headers || !out_result) return MF_ERR_INVALID_ARG;
@@ -146,6 +160,98 @@ void mf_free_result(mf_result_t *result) {
     std::free(result->message_id);
     std::free(result->result_json);
     std::memset(result, 0, sizeof(*result));
+}
+
+mf_error_t mf_clone_schema_from_db(
+    const char *source_db_path,
+    const char *target_db_path
+) {
+    if (!source_db_path || !target_db_path) {
+        return MF_ERR_INVALID_ARG;
+    }
+    if (!mf_is_initialized()) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    /*
+     * TODO:
+     * - source DB read-only öffnen
+     * - sqlite_master-Schema extrahieren
+     * - target DB anlegen
+     * - Tabellen/Indizes im Ziel erzeugen
+     */
+    return MF_ERR_UNSUPPORTED;
+}
+
+mf_error_t mf_create_empty_db(
+    const char *target_db_path
+) {
+    if (!target_db_path) {
+        return MF_ERR_INVALID_ARG;
+    }
+    if (!mf_is_initialized()) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    /*
+     * TODO:
+     * - neue DB anlegen
+     * - Kernschema erzeugen:
+     *   MESSAGES, HEADER_ENTRIES, RULE_HITS
+     */
+    return MF_ERR_UNSUPPORTED;
+}
+
+mf_error_t mf_import_header_file_with_options(
+    const char *input_path,
+    const mf_import_options_t *options,
+    int *out_imported_count
+) {
+    if (!input_path || !options) {
+        return MF_ERR_INVALID_ARG;
+    }
+    if (!mf_is_initialized()) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+    if (out_imported_count) {
+        *out_imported_count = 0;
+    }
+
+    /*
+     * TODO Phase 1:
+     * - mailheader.log / sequenzielle Headerdatei lesen
+     * - Blöcke mit . als Ende erkennen
+     * - messages + header_entries schreiben
+     *
+     * TODO Phase 2:
+     * - analyze_after_import auswerten
+     * - Parser / Weeder laufen lassen
+     * - optional rule_hits füllen
+     */
+    return MF_ERR_UNSUPPORTED;
+}
+
+mf_error_t mf_import_header_text_with_options(
+    const char *input_text,
+    const mf_import_options_t *options,
+    int *out_imported_count
+) {
+    if (!input_text || !options) {
+        return MF_ERR_INVALID_ARG;
+    }
+    if (!mf_is_initialized()) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+    if (out_imported_count) {
+        *out_imported_count = 0;
+    }
+
+    /*
+     * TODO:
+     * - Text in Blöcke zerlegen
+     * - denselben Importpfad wie bei Dateiinput nutzen
+     */
+    return MF_ERR_UNSUPPORTED;
 }
 
 mf_error_t mf_validate_schema(void) {

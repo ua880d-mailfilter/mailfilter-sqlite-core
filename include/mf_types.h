@@ -40,6 +40,35 @@ typedef struct mf_import_stats_t {
     int total_blocks_failed;
 } mf_import_stats_t;
 
+typedef struct mf_import_options_t {
+    /* Ziel-DB, in die importiert wird */
+    const char *target_db_path;
+
+    /* Optional: Schema aus vorhandener DB übernehmen */
+    const char *schema_from_db_path;
+
+    /* Optional: Prefix für erzeugte msg_log_id, z. B. "imp-" */
+    const char *id_prefix;
+
+    /* Optionaler Startwert für Laufnummern */
+    int start_serial;
+
+    /* Optionaler Decision-Text für importierte Datensätze */
+    const char *decision;
+
+    /* 1 = Ziel-DB vor dem Import zurücksetzen */
+    int reset_target_db;
+
+    /* 1 = Import direkt analysieren */
+    int analyze_after_import;
+
+    /* 1 = rule_hits beim Import füllen, falls Analyse aktiv */
+    int fill_rule_hits;
+
+    /* 1 = nur parsen/validieren, nichts schreiben */
+    int dry_run;
+} mf_import_options_t;
+
 #ifdef __cplusplus
 }
 #endif

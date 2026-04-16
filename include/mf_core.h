@@ -44,6 +44,27 @@ void mf_free_result(mf_result_t *result);
 mf_error_t mf_validate_schema(void);
 void mf_shutdown(void);
 
+mf_error_t mf_clone_schema_from_db(
+    const char *source_db_path,
+    const char *target_db_path
+);
+
+mf_error_t mf_create_empty_db(
+    const char *target_db_path
+);
+
+mf_error_t mf_import_header_file_with_options(
+    const char *input_path,
+    const mf_import_options_t *options,
+    int *out_imported_count
+);
+
+mf_error_t mf_import_header_text_with_options(
+    const char *input_text,
+    const mf_import_options_t *options,
+    int *out_imported_count
+);
+
 #ifdef __cplusplus
 }
 #endif
