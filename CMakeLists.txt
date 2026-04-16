@@ -32,7 +32,6 @@ set(MF_CORE_SOURCES
     ${MF_COMPAT_DIR}/mf_paths.cc
     ${MF_CORE_DIR}/db/dblog.cc
     ${MF_CORE_DIR}/header/header.cc
-    ${MF_CORE_DIR}/config/account.cc
     ${MF_CORE_DIR}/rules/filter.cc
     ${MF_CORE_DIR}/rules/score.cc
 )
