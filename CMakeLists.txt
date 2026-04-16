@@ -59,17 +59,23 @@ target_compile_definitions(mailfilter_sqlite_core
         $<$<BOOL:${MF_ENABLE_ADDITIVE_TABLES}>:MF_ENABLE_ADDITIVE_TABLES=1>
 )
 
-find_library(log-lib log)
 find_library(z-lib z)
 find_library(m-lib m)
 
+if(ANDROID)
+    find_library(log-lib log)
+endif()
+
 target_link_libraries(mailfilter_sqlite_core
     PRIVATE
-        ${log-lib}
         ${z-lib}
         ${m-lib}
         sqlite3
 )
+
+if(ANDROID AND log-lib)
+    target_link_libraries(mailfilter_sqlite_core PRIVATE ${log-lib})
+endif()
 
 set_target_properties(mailfilter_sqlite_core PROPERTIES
     OUTPUT_NAME "mailfilter_sqlite_core"
