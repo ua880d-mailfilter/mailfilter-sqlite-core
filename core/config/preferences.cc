@@ -27,8 +27,6 @@
 #include "preferences.hh"
 #include "filter.hh"
 #include "mailfilter.hh"
-#include "account.hh"
-#include "protocol.hh"
 #include "score.hh"
 #include "rcfile.hh"
 
@@ -87,12 +85,13 @@ void Preferences :: init (void)
   size_score.score = 0;
   size_score.size = 0;
 }
+
   
 void Preferences :: kill (void)
 {
-  vector<Account> :: iterator die_account = (Preferences :: accnts).begin ();
-  while (die_account != (Preferences :: accnts).end ())
-    { die_account->clear (); die_account++; }
+  allows.clear();
+  denies.clear();
+  scores.clear();
 }
 
 void Preferences :: set_ignore_time_stamp(bool new_ts)
@@ -346,83 +345,12 @@ void Preferences :: set_reg_type (const char* new_type)
 int Preferences :: reg_type (void)
 { return rreg_type; }
 
-void Preferences :: set_server (const char* server)
-{ cur_account.set_server (server); }
-
-void Preferences :: set_usr (const char* user)
-{ cur_account.set_usr (user); }
-
-void Preferences :: set_passwd (const char* pass)
-{ cur_account.set_passwd (pass); }
-
-void Preferences :: set_protocol (const char* prot)
-{
-  try
-    {
-      if (cmp_no_case (prot, "POP3") == 0)
-	cur_account.set_protocol (PROTOCOL_POP3);
-      else if (cmp_no_case (prot, "APOP") == 0)
-	cur_account.set_protocol (PROTOCOL_APOP);
-#ifdef USE_SSL
-      else if (cmp_no_case (prot, "POP3/SSL") == 0)
-	cur_account.set_protocol (PROTOCOL_POP3 | SSL_C);
-      else if (cmp_no_case (prot, "APOP/SSL") == 0)
-	cur_account.set_protocol (PROTOCOL_APOP | SSL_C);
-#endif
-      else
-	{
-	  ERROR_MSG ((string)"Only supported protocols are POP3 and "
-		     + (string)"APOP (SSL only if OpenSSL is available).");
-	  exit (-1);
-	}
-    }
-  catch (const exception& r_err)
-    {
-      // Most likely an error is the result of insufficient memory;
-      // set_protocol tries to reserve space for a protocol object.
-      //
-      // The error cannot be passed on here, cause it would have to
-      // pass the parser which is not exception-save.  (Maybe, this
-      // can be fixed in the future?)
-      ERROR_MSG (r_err.what ());
-      exit (-1);
-    }
-}
-
-// This function is pretty much a dummy wrapper.  See comments
-// inside account.cc for further information about it.
-
-void Preferences :: set_connection (unsigned int p)
-{ 
-  try
-    {
-      cur_account.set_connection ();
-    }
-  catch (const exception& r_err)
-    {
-      ERROR_MSG (r_err.what ());
-      exit (-1);
-    }
-}
-  
-void Preferences :: set_port (unsigned int p)
-{
-  // Port is the last instruction in the server-defining block from
-  // the rcfile, hence, we have to push the current server data onto
-  // the stack of stored accounts.
-  // TODO: shift this functionality into the rcfile parser!
-  cur_account.set_port (p);
-  accnts.push_back (cur_account);
-}
 
 bool Preferences :: delete_duplicates (void)
 {  return del_duplicates; }
 
 void Preferences :: set_del_duplicates (const char* del)
 { del_duplicates = (cmp_no_case (del, "yes") == 0 ? true : false); }
-
-vector<Account>* Preferences :: accounts (void)
-{ return &accnts; }
 
 vector<Filter>* Preferences :: allow_filters (void)
 { return &allows; }
