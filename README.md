@@ -27,7 +27,7 @@ Header: value
 The current parser accepts the block transition you confirmed:
 
 ```text
-Envelope-To: rico-elektro@freenet.de
+Envelope-To: xyz@domain.de
 
 .
 
