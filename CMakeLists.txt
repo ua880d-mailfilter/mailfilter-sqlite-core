@@ -59,6 +59,8 @@ target_compile_definitions(mailfilter_sqlite_core
         MF_ANDROID_CORE=1
         MF_DISABLE_TRANSPORT=1
         MF_DISABLE_CLI=1
+        PACKAGE_NAME="mailfilter-sqlite-core"
+        PACKAGE_VERSION="0.1.0"
         $<$<BOOL:${MF_ENABLE_ANDROID_LOG}>:MF_ENABLE_ANDROID_LOG=1>
         $<$<BOOL:${MF_ENABLE_EXPLANATIONS}>:MF_ENABLE_EXPLANATIONS=1>
         $<$<BOOL:${MF_ENABLE_ADDITIVE_TABLES}>:MF_ENABLE_ADDITIVE_TABLES=1>
