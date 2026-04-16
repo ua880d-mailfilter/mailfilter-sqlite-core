@@ -30,6 +30,8 @@ set(MF_CORE_SOURCES
     ${MF_COMPAT_DIR}/feedback.cc
     ${MF_COMPAT_DIR}/mf_log.cc
     ${MF_COMPAT_DIR}/mf_paths.cc
+    ${MF_CORE_DIR}/db/dblog.cc
+    ${MF_CORE_DIR}/header/header.cc
 )
 
 add_library(mailfilter_sqlite_core SHARED ${MF_CORE_SOURCES})
