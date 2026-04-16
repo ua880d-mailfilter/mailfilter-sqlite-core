@@ -38,6 +38,7 @@ set(MF_CORE_SOURCES
     ${MF_CORE_DIR}/parser/rcparser.cc
     ${MF_CORE_DIR}/header/rfc822.cc
     ${MF_CORE_DIR}/header/rfc822parser.cc
+    ${MF_CORE_DIR}/rules/weeder.cc
 )
 
 add_library(mailfilter_sqlite_core SHARED ${MF_CORE_SOURCES})
