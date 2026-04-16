@@ -1,0 +1,51 @@
+#ifndef MF_CORE_H
+#define MF_CORE_H
+
+#include "mf_error.h"
+#include "mf_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+mf_error_t mf_init(const mf_config_t *cfg);
+int mf_is_initialized(void);
+mf_error_t mf_get_version(mf_version_t *out_version);
+
+mf_error_t mf_analyze_header_text(
+    const char *raw_headers,
+    mf_result_t *out_result
+);
+
+mf_error_t mf_analyze_eml_file(
+    const char *eml_path,
+    mf_result_t *out_result
+);
+
+mf_error_t mf_open_existing_db(
+    const char *source_db_path,
+    int open_read_only
+);
+
+mf_error_t mf_close_existing_db(void);
+
+mf_error_t mf_import_sequential_header_file(
+    const char *input_path,
+    int analyze_and_store,
+    int *out_imported_count
+);
+
+mf_error_t mf_parse_sequential_header_block(
+    const char *input_text,
+    char **out_raw_headers
+);
+
+void mf_free_result(mf_result_t *result);
+mf_error_t mf_validate_schema(void);
+void mf_shutdown(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
