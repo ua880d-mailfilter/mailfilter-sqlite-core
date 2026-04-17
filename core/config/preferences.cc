@@ -166,6 +166,11 @@ void Preferences :: add_deny_rule (const char* keyword,
   else
     cur_filter.set_case (default_case ());
 
+  if (cur_filter.compile () != 0) {
+    ERROR_MSG("Failed to compile deny rule regex: `" + cur_filter.expression () + "'.");
+    exit (-1);
+  }
+
   denies.push_back (cur_filter);
 }
 
@@ -191,7 +196,12 @@ void Preferences :: add_allow_rule (const char* keyword,
     cur_filter.set_case (CASE_INSENSITIVE);
   else
     cur_filter.set_case (default_case ());
-    
+
+  if (cur_filter.compile () != 0) {
+    ERROR_MSG("Failed to compile allow rule regex: `" + cur_filter.expression () + "'.");
+    exit (-1);
+  }
+
   allows.push_back (cur_filter);
 }
 
@@ -219,6 +229,11 @@ void Preferences :: add_score (const char* keyword,
     cur_score.set_case (CASE_INSENSITIVE);
   else
     cur_score.set_case (default_case ());
+
+  if (cur_score.compile () != 0) {
+    ERROR_MSG("Failed to compile score rule regex: `" + cur_score.expression () + "'.");
+    exit (-1);
+  }
 
   scores.push_back (cur_score);
 }
