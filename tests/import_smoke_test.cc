@@ -29,7 +29,28 @@ static int query_single_int(sqlite3 *db, const char *sql, int *out_value) {
     return ok;
 }
 
-static int run_import_check(const char *input_file, const char *import_db) {
+static int query_single_text(sqlite3 *db, const char *sql, std::string &out_value) {
+    if (!db || !sql) {
+        return 0;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return 0;
+    }
+
+    int ok = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *txt = sqlite3_column_text(stmt, 0);
+        out_value = txt ? reinterpret_cast<const char *>(txt) : "";
+        ok = 1;
+    }
+
+    sqlite3_finalize(stmt);
+    return ok;
+}
+
+static int run_import_check(const char *input_file, const char *import_db, int analyze_after_import) {
     std::remove(import_db);
 
     mf_import_options_t opts{};
@@ -39,7 +60,7 @@ static int run_import_check(const char *input_file, const char *import_db) {
     opts.start_serial = 1;
     opts.decision = "imported";
     opts.reset_target_db = 1;
-    opts.analyze_after_import = 0;
+    opts.analyze_after_import = analyze_after_import;
     opts.fill_rule_hits = 0;
     opts.dry_run = 0;
 
@@ -96,12 +117,39 @@ static int run_import_check(const char *input_file, const char *import_db) {
         return 16;
     }
 
+    if (analyze_after_import) {
+        std::string decision;
+        if (!query_single_text(
+                db,
+                "SELECT decision FROM messages ORDER BY msg_log_id LIMIT 1;",
+                decision
+            )) {
+            std::cerr << "failed to query decision for " << input_file << "\n";
+            sqlite3_close(db);
+            return 17;
+        }
+
+        if (decision.empty()) {
+            std::cerr << "empty decision for " << input_file << "\n";
+            sqlite3_close(db);
+            return 18;
+        }
+
+        if (decision != "pass" && decision != "deny") {
+            std::cerr << "unexpected decision='" << decision
+                      << "' for " << input_file << "\n";
+            sqlite3_close(db);
+            return 19;
+        }
+    }
+    
     sqlite3_close(db);
 
     std::cout << "OK file=" << input_file
               << " imported_count=" << imported_count
               << " messages=" << messages_count
               << " header_entries=" << header_entries_count
+              << " analyze=" << analyze_after_import
               << "\n";
     return 0;
 }
@@ -130,7 +178,8 @@ int main() {
 
     int rc = run_import_check(
         "tests/data/sample-mailheader.log",
-        "build/test-import-lf.sqlite3"
+        "build/test-import-lf.sqlite3",
+	1
     );
     if (rc != 0) {
         mf_shutdown();
@@ -139,7 +188,8 @@ int main() {
 
     rc = run_import_check(
         "build/sample-mailheader-crlf.log",
-        "build/test-import-crlf.sqlite3"
+        "build/test-import-crlf.sqlite3",
+	1
     );
     if (rc != 0) {
         mf_shutdown();
