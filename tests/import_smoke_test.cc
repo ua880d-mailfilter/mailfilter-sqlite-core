@@ -158,7 +158,7 @@ static int run_import_check(const char *input_file, const char *import_db, int a
             sqlite3_close(db);
             return 20;
         }
-// new
+
         int rule_hits_count = 0;
         if (!query_single_int(
                 db,
@@ -181,11 +181,6 @@ static int run_import_check(const char *input_file, const char *import_db, int a
                   << " decision=" << decision
                   << " final_score=" << final_score
                   << " rule_hits=" << rule_hits_count
-                  << "\n";
-// 
-        std::cout << "ANALYZE file=" << input_file
-                  << " decision=" << decision
-                  << " final_score=" << final_score
                   << "\n";
 
     } // Ende if analyze
