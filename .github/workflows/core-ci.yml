@@ -48,18 +48,22 @@ jobs:
         run: |
           ./build/import_smoke_test
 
-      - name: Dump smoke test database summary
+      - name: Dump smoke test database summaries
         run: |
-          sqlite3 build/test-import.sqlite3 "SELECT 'MESSAGES', COUNT(*) FROM MESSAGES;" > build/test-import-summary.txt
-          sqlite3 build/test-import.sqlite3 "SELECT 'HEADER_ENTRIES', COUNT(*) FROM HEADER_ENTRIES;" >> build/test-import-summary.txt
-          sqlite3 build/test-import.sqlite3 "SELECT msg_log_id, message_id, subject FROM MESSAGES ORDER BY msg_log_id LIMIT 5;" >> build/test-import-summary.txt
+          sqlite3 build/test-import-lf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-lf-summary.txt
+          sqlite3 build/test-import-lf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-lf-summary.txt
+          sqlite3 build/test-import-lf.sqlite3 "SELECT msg_log_id, message_id, subject FROM messages ORDER BY msg_log_id LIMIT 5;" >> build/test-import-lf-summary.txt
+
+          sqlite3 build/test-import-crlf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-crlf-summary.txt
+          sqlite3 build/test-import-crlf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-crlf-summary.txt
+          sqlite3 build/test-import-crlf.sqlite3 "SELECT msg_log_id, message_id, subject FROM messages ORDER BY msg_log_id LIMIT 5;" >> build/test-import-crlf-summary.txt
 
       - name: Upload smoke test database
         uses: actions/upload-artifact@v4
         with:
           name: smoke-test-db
           path: |
-            build/test-import.sqlite3
+            build/test-import-lf.sqlite3
             build/test-import-crlf.sqlite3
 
       - name: Upload smoke test summary
@@ -67,4 +71,5 @@ jobs:
         with:
           name: smoke-test-summary
           path: |
-            build/test-import-summary.txt
+            build/test-import-lf-summary.txt
+            build/test-import-crlf-summary.txt
