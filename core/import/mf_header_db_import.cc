@@ -32,9 +32,6 @@ static std::string normalize_subject_simple(const std::string &subject) {
     return subject;
 }
 
-###
-###
-
 static int exec_sql(sqlite3 *db, const char *sql) {
     char *errmsg = nullptr;
     const int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errmsg);
