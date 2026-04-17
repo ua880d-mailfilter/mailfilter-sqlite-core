@@ -158,12 +158,37 @@ static int run_import_check(const char *input_file, const char *import_db, int a
             sqlite3_close(db);
             return 20;
         }
+// new
+        int rule_hits_count = 0;
+        if (!query_single_int(
+                db,
+                "SELECT COUNT(*) FROM rule_hits;",
+                &rule_hits_count
+            )) {
+            std::cerr << "failed to query rule_hits count for " << input_file << "\n";
+            sqlite3_close(db);
+            return 21;
+        }
+
+        if (rule_hits_count <= 0) {
+            std::cerr << "expected rule_hits > 0 but got " << rule_hits_count
+                      << " for " << input_file << "\n";
+            sqlite3_close(db);
+            return 22;
+        }
 
         std::cout << "ANALYZE file=" << input_file
                   << " decision=" << decision
                   << " final_score=" << final_score
+                  << " rule_hits=" << rule_hits_count
                   << "\n";
-    }
+// 
+        std::cout << "ANALYZE file=" << input_file
+                  << " decision=" << decision
+                  << " final_score=" << final_score
+                  << "\n";
+
+    } // Ende if analyze
 
     sqlite3_close(db);
 
@@ -184,7 +209,7 @@ int main() {
 
     mf_config_t cfg{};
     cfg.db_path = runtime_db;
-    cfg.rc_path = "tests/data/dummy.rc";
+    cfg.rc_path = "tests/data/test-analysis.rc";
     cfg.policy_dir = ".";
     cfg.enable_sqlite_logging = 1;
     cfg.enable_rule_hits = 0;
