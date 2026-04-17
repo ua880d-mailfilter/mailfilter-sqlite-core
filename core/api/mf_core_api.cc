@@ -241,12 +241,10 @@ mf_error_t mf_analyze_header_text(
        Die eigentliche Weeder-/Score-Logik folgt im nächsten Schritt. */
     out_result->decision = mf_strdup_safe("pass");
     out_result->final_score = 0;
-    out_result->summary = mf_strdup_safe("header parsed successfully");
-    out_result->explanation_json = nullptr;
 
     delete hdr;
 
-    if (!out_result->decision || !out_result->summary) {
+    if (!out_result->decision) {
         mf_free_result(out_result);
         return MF_ERR_OOM;
     }
