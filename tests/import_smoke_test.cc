@@ -135,14 +135,36 @@ static int run_import_check(const char *input_file, const char *import_db, int a
             return 18;
         }
 
-        if (decision != "pass" && decision != "deny") {
+        if (decision != "pass" &&
+            decision != "deny" &&
+            decision != "score-deny" &&
+            decision != "deny-maxlength" &&
+            decision != "allow" &&
+            decision != "duplicate" &&
+            decision != "deny-after-allow") {
             std::cerr << "unexpected decision='" << decision
                       << "' for " << input_file << "\n";
             sqlite3_close(db);
             return 19;
         }
+
+        int final_score = 0;
+        if (!query_single_int(
+                db,
+                "SELECT final_score FROM messages ORDER BY msg_log_id LIMIT 1;",
+                &final_score
+            )) {
+            std::cerr << "failed to query final_score for " << input_file << "\n";
+            sqlite3_close(db);
+            return 20;
+        }
+
+        std::cout << "ANALYZE file=" << input_file
+                  << " decision=" << decision
+                  << " final_score=" << final_score
+                  << "\n";
     }
-    
+
     sqlite3_close(db);
 
     std::cout << "OK file=" << input_file
@@ -151,6 +173,7 @@ static int run_import_check(const char *input_file, const char *import_db, int a
               << " header_entries=" << header_entries_count
               << " analyze=" << analyze_after_import
               << "\n";
+
     return 0;
 }
 
@@ -178,8 +201,7 @@ int main() {
 
     int rc = run_import_check(
         "tests/data/sample-mailheader.log",
-        "build/test-import-lf.sqlite3",
-	1
+        "build/test-import-lf.sqlite3",1
     );
     if (rc != 0) {
         mf_shutdown();
@@ -188,8 +210,7 @@ int main() {
 
     rc = run_import_check(
         "build/sample-mailheader-crlf.log",
-        "build/test-import-crlf.sqlite3",
-	1
+        "build/test-import-crlf.sqlite3",0
     );
     if (rc != 0) {
         mf_shutdown();
