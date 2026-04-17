@@ -29,12 +29,87 @@ static int query_single_int(sqlite3 *db, const char *sql, int *out_value) {
     return ok;
 }
 
+static int run_import_check(const char *input_file, const char *import_db) {
+    std::remove(import_db);
+
+    mf_import_options_t opts{};
+    opts.target_db_path = import_db;
+    opts.schema_from_db_path = nullptr;
+    opts.id_prefix = "imp-";
+    opts.start_serial = 1;
+    opts.decision = "imported";
+    opts.reset_target_db = 1;
+    opts.analyze_after_import = 0;
+    opts.fill_rule_hits = 0;
+    opts.dry_run = 0;
+
+    int imported_count = 0;
+    mf_error_t err = mf_import_header_file_with_options(
+        input_file,
+        &opts,
+        &imported_count
+    );
+    if (err != MF_OK) {
+        std::cerr << "mf_import_header_file_with_options failed for " << input_file
+                  << ": " << mf_error_string(err) << "\n";
+        return 10;
+    }
+
+    if (imported_count != 3) {
+        std::cerr << "unexpected imported_count=" << imported_count
+                  << " for " << input_file << "\n";
+        return 11;
+    }
+
+    sqlite3 *db = nullptr;
+    if (sqlite3_open(import_db, &db) != SQLITE_OK) {
+        std::cerr << "sqlite3_open failed for " << import_db << "\n";
+        if (db) sqlite3_close(db);
+        return 12;
+    }
+
+    int messages_count = 0;
+    if (!query_single_int(db, "SELECT COUNT(*) FROM messages;", &messages_count)) {
+        std::cerr << "failed to query messages count for " << input_file << "\n";
+        sqlite3_close(db);
+        return 13;
+    }
+
+    int header_entries_count = 0;
+    if (!query_single_int(db, "SELECT COUNT(*) FROM header_entries;", &header_entries_count)) {
+        std::cerr << "failed to query header_entries count for " << input_file << "\n";
+        sqlite3_close(db);
+        return 14;
+    }
+
+    if (messages_count != 3) {
+        std::cerr << "unexpected messages count=" << messages_count
+                  << " for " << input_file << "\n";
+        sqlite3_close(db);
+        return 15;
+    }
+
+    if (header_entries_count <= 0) {
+        std::cerr << "unexpected header_entries count=" << header_entries_count
+                  << " for " << input_file << "\n";
+        sqlite3_close(db);
+        return 16;
+    }
+
+    sqlite3_close(db);
+
+    std::cout << "OK file=" << input_file
+              << " imported_count=" << imported_count
+              << " messages=" << messages_count
+              << " header_entries=" << header_entries_count
+              << "\n";
+    return 0;
+}
+
 int main() {
     const char *runtime_db = "build/test-runtime.sqlite3";
-    const char *import_db  = "build/test-import.sqlite3";
 
     std::remove(runtime_db);
-    std::remove(import_db);
 
     mf_config_t cfg{};
     cfg.db_path = runtime_db;
@@ -53,80 +128,24 @@ int main() {
         return 1;
     }
 
-    mf_import_options_t opts{};
-    opts.target_db_path = import_db;
-    opts.schema_from_db_path = nullptr;
-    opts.id_prefix = "imp-";
-    opts.start_serial = 1;
-    opts.decision = "imported";
-    opts.reset_target_db = 1;
-    opts.analyze_after_import = 0;
-    opts.fill_rule_hits = 0;
-    opts.dry_run = 0;
-
-    int imported_count = 0;
-    err = mf_import_header_file_with_options(
+    int rc = run_import_check(
         "tests/data/sample-mailheader.log",
-        &opts,
-        &imported_count
+        "build/test-import-lf.sqlite3"
     );
-    if (err != MF_OK) {
-        std::cerr << "mf_import_header_file_with_options failed: "
-                  << mf_error_string(err) << "\n";
+    if (rc != 0) {
         mf_shutdown();
-        return 2;
+        return rc;
     }
 
-    if (imported_count != 2) {
-        std::cerr << "unexpected imported_count=" << imported_count << "\n";
+    rc = run_import_check(
+        "build/sample-mailheader-crlf.log",
+        "build/test-import-crlf.sqlite3"
+    );
+    if (rc != 0) {
         mf_shutdown();
-        return 3;
+        return rc;
     }
 
-    sqlite3 *db = nullptr;
-    if (sqlite3_open(import_db, &db) != SQLITE_OK) {
-        std::cerr << "sqlite3_open failed for import db\n";
-        if (db) sqlite3_close(db);
-        mf_shutdown();
-        return 4;
-    }
-
-    int messages_count = 0;
-    if (!query_single_int(db, "SELECT COUNT(*) FROM MESSAGES;", &messages_count)) {
-        std::cerr << "failed to query MESSAGES count\n";
-        sqlite3_close(db);
-        mf_shutdown();
-        return 5;
-    }
-
-    int header_entries_count = 0;
-    if (!query_single_int(db, "SELECT COUNT(*) FROM HEADER_ENTRIES;", &header_entries_count)) {
-        std::cerr << "failed to query HEADER_ENTRIES count\n";
-        sqlite3_close(db);
-        mf_shutdown();
-        return 6;
-    }
-
-    if (messages_count != 2) {
-        std::cerr << "unexpected MESSAGES count=" << messages_count << "\n";
-        sqlite3_close(db);
-        mf_shutdown();
-        return 7;
-    }
-
-    if (header_entries_count <= 0) {
-        std::cerr << "unexpected HEADER_ENTRIES count=" << header_entries_count << "\n";
-        sqlite3_close(db);
-        mf_shutdown();
-        return 8;
-    }
-
-    sqlite3_close(db);
     mf_shutdown();
-
-    std::cout << "OK imported_count=" << imported_count
-              << " messages=" << messages_count
-              << " header_entries=" << header_entries_count
-              << "\n";
     return 0;
 }

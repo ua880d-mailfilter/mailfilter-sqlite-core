@@ -33,6 +33,17 @@ jobs:
           path: |
             build
 
+      - name: Create CRLF variant of sample mailheader log
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          src = Path("tests/data/sample-mailheader.log")
+          dst = Path("build/sample-mailheader-crlf.log")
+          text = src.read_text(encoding="utf-8")
+          text = text.replace("\r\n", "\n").replace("\r", "\n")
+          dst.write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
+          PY
+
       - name: Smoke-Test Import
         run: |
           ./build/import_smoke_test
@@ -49,6 +60,7 @@ jobs:
           name: smoke-test-db
           path: |
             build/test-import.sqlite3
+            build/test-import-crlf.sqlite3
 
       - name: Upload smoke test summary
         uses: actions/upload-artifact@v4
