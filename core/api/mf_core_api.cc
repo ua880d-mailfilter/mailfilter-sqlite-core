@@ -3,6 +3,8 @@
 #include "mf_seq_header_import.h"
 #include "mf_header_db_import.h"
 #include "preferences.hh"
+#include "header/header.hh"
+#include "mf_header_parse_utils.h"
 
 #include <cstdlib>
 #include <cstring>
