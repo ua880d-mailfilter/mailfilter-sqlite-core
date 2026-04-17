@@ -37,9 +37,22 @@ jobs:
         run: |
           ./build/import_smoke_test
 
+      - name: Dump smoke test database summary
+        run: |
+          sqlite3 build/test-import.sqlite3 "SELECT 'MESSAGES', COUNT(*) FROM MESSAGES;" > build/test-import-summary.txt
+          sqlite3 build/test-import.sqlite3 "SELECT 'HEADER_ENTRIES', COUNT(*) FROM HEADER_ENTRIES;" >> build/test-import-summary.txt
+          sqlite3 build/test-import.sqlite3 "SELECT msg_log_id, message_id, subject FROM MESSAGES ORDER BY msg_log_id LIMIT 5;" >> build/test-import-summary.txt
+
       - name: Upload smoke test database
         uses: actions/upload-artifact@v4
         with:
           name: smoke-test-db
           path: |
             build/test-import.sqlite3
+
+      - name: Upload smoke test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-summary
+          path: |
+            build/test-import-summary.txt
