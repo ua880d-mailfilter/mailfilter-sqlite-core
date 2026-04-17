@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <vector>
+#include <utility>
 
 std::string mf_build_result_json(const char *decision, int final_score, const char *msg_log_id, const char *message_id);
 
@@ -105,6 +107,44 @@ namespace {
         return MF_OK;
     }
 
+    static mf_error_t mf_build_header_from_text(
+        const char *raw_headers,
+        Header **out_header
+    )
+    {
+        if (!raw_headers || !out_header) {
+            return MF_ERR_INVALID_ARG;
+        }
+
+        *out_header = nullptr;
+
+        std::vector<std::pair<std::string, std::string>> fields;
+        mf_error_t err = mf_parse_headers_to_fields(raw_headers, fields);
+        if (err != MF_OK) {
+            return err;
+        }
+
+        Header *hdr = nullptr;
+        try {
+            hdr = new Header();
+
+            for (const auto &f : fields) {
+                hdr->add_entry(f.first.c_str(), f.second.c_str());
+            }
+
+            hdr->set_size(static_cast<int>(std::strlen(raw_headers)));
+        } catch (const WrongMessageIDException &) {
+            delete hdr;
+            return MF_ERR_FORMAT;
+        } catch (...) {
+            delete hdr;
+            return MF_ERR_INTERNAL;
+        }
+
+        *out_header = hdr;
+        return MF_OK;
+    }
+
 }
 
 const char *mf_error_string(mf_error_t err) {
@@ -169,26 +209,42 @@ static mf_import_options_t mf_default_import_options() {
     return opts;
 }
 
-mf_error_t mf_analyze_header_text(const char *raw_headers, mf_result_t *out_result) {
-    if (!g_initialized) return MF_ERR_NOT_INITIALIZED;
-    if (!raw_headers || !out_result) return MF_ERR_INVALID_ARG;
+mf_error_t mf_analyze_header_text(
+    const char *header_text,
+    mf_result_t *out_result
+)
+{
+    if (!header_text || !out_result) {
+        return MF_ERR_INVALID_ARG;
+    }
+    if (!mf_is_initialized()) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
 
     std::memset(out_result, 0, sizeof(*out_result));
 
-    out_result->final_score = 0;
+    mf_error_t err = mf_prepare_analysis_preferences(&g_cfg);
+    if (err != MF_OK) {
+        return err;
+    }
+
+    Header *hdr = nullptr;
+    err = mf_build_header_from_text(header_text, &hdr);
+    if (err != MF_OK) {
+        return err;
+    }
+
+    /* Phase 1:
+       Header wurde jetzt real aufgebaut.
+       Die eigentliche Weeder-/Score-Logik folgt im nächsten Schritt. */
     out_result->decision = mf_strdup_safe("pass");
-    out_result->msg_log_id = mf_strdup_safe("0");
-    out_result->message_id = mf_strdup_safe("");
+    out_result->final_score = 0;
+    out_result->summary = mf_strdup_safe("header parsed successfully");
+    out_result->explanation_json = nullptr;
 
-    std::string json = mf_build_result_json(
-        out_result->decision,
-        out_result->final_score,
-        out_result->msg_log_id,
-        out_result->message_id
-    );
-    out_result->result_json = mf_strdup_safe(json.c_str());
+    delete hdr;
 
-    if (!out_result->decision || !out_result->msg_log_id || !out_result->message_id || !out_result->result_json) {
+    if (!out_result->decision || !out_result->summary) {
         mf_free_result(out_result);
         return MF_ERR_OOM;
     }
