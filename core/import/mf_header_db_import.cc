@@ -338,3 +338,45 @@ mf_error_t mf_import_header_text_to_db(
 
     return MF_OK;
 }
+
+mf_error_t mf_update_message_analysis_result(
+    const char *target_db_path,
+    const char *msg_log_id,
+    const char *decision,
+    int final_score
+) {
+    if (!target_db_path || !msg_log_id || !decision) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    sqlite3 *db = nullptr;
+    if (sqlite3_open(target_db_path, &db) != SQLITE_OK) {
+        if (db) sqlite3_close(db);
+        return MF_ERR_DB_OPEN;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+    const char *sql =
+        "UPDATE messages "
+        "SET decision = ?, final_score = ? "
+        "WHERE msg_log_id = ?;";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_close(db);
+        return MF_ERR_DB_WRITE;
+    }
+
+    sqlite3_bind_text(stmt, 1, decision, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, final_score);
+    sqlite3_bind_text(stmt, 3, msg_log_id, -1, SQLITE_TRANSIENT);
+
+    int rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    if (rc != SQLITE_DONE) {
+        return MF_ERR_DB_WRITE;
+    }
+
+    return MF_OK;
+}
