@@ -46,7 +46,7 @@ namespace {
             return err;
         }
 
-        Preferences::Instance().set_headers_sqlite3_file(options->target_db_path);
+    //    Preferences::Instance().set_headers_sqlite3_file(options->target_db_path);
 
         char *msg_log_id = nullptr;
         err = mf_import_header_text_to_db(
