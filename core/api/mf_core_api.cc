@@ -1,6 +1,7 @@
 #include "mf_core.h"
 #include "mf_db_open.h"
 #include "mf_seq_header_import.h"
+#include "mf_header_db_import.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -172,15 +173,7 @@ mf_error_t mf_clone_schema_from_db(
     if (!mf_is_initialized()) {
         return MF_ERR_NOT_INITIALIZED;
     }
-
-    /*
-     * TODO:
-     * - source DB read-only öffnen
-     * - sqlite_master-Schema extrahieren
-     * - target DB anlegen
-     * - Tabellen/Indizes im Ziel erzeugen
-     */
-    return MF_ERR_UNSUPPORTED;
+    return mf_clone_schema_from_db_impl(source_db_path, target_db_path);
 }
 
 mf_error_t mf_create_empty_db(
@@ -192,14 +185,7 @@ mf_error_t mf_create_empty_db(
     if (!mf_is_initialized()) {
         return MF_ERR_NOT_INITIALIZED;
     }
-
-    /*
-     * TODO:
-     * - neue DB anlegen
-     * - Kernschema erzeugen:
-     *   MESSAGES, HEADER_ENTRIES, RULE_HITS
-     */
-    return MF_ERR_UNSUPPORTED;
+    return mf_create_empty_db_impl(target_db_path);
 }
 
 mf_error_t mf_import_header_file_with_options(
@@ -246,12 +232,20 @@ mf_error_t mf_import_header_text_with_options(
         *out_imported_count = 0;
     }
 
-    /*
-     * TODO:
-     * - Text in Blöcke zerlegen
-     * - denselben Importpfad wie bei Dateiinput nutzen
-     */
-    return MF_ERR_UNSUPPORTED;
+    char *msg_log_id = nullptr;
+    mf_error_t err = mf_import_header_text_to_db(
+        input_text,
+        options,
+        1,
+        &msg_log_id
+    );
+
+    std::free(msg_log_id);
+
+    if (err == MF_OK && out_imported_count) {
+        *out_imported_count = 1;
+    }
+    return err;
 }
 
 mf_error_t mf_validate_schema(void) {
