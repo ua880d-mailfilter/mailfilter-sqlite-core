@@ -110,30 +110,14 @@ bool Preferences :: ignore_time_stamp()
     
 bool Preferences :: open (const char* name)
 {
-  prefs_file_name = name;
+  if (name && *name)
+    prefs_file_name = name;
 
   if (!prefs_file_name.length ())
-    {
-      char* home_env;
+    return false;
 
-      if ((home_env = getenv ("HOME")))
-	{
-	  string home_dir = home_env;
-	  prefs_file_name = home_dir + (string)RC_FILE_NAME;
-	  prefs_stream.open (prefs_file_name.c_str ());
+  prefs_stream.open (prefs_file_name.c_str ());
 
-	  // Windoze people have trouble with the leading dot so
-	  // here's an extra check, in case .mailfilterrc can't be
-	  // located in the user's home directory.
-	  if (!prefs_stream.is_open ())
-	    prefs_file_name = home_dir + (string)RC_FILE_NAME_WIN;
-	}
-      else
-	return false;
-    }
-  else
-    prefs_stream.open (prefs_file_name.c_str ());
-    
   if (!prefs_stream.is_open ())
     return false;
 
