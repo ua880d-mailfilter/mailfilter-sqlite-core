@@ -164,13 +164,8 @@ namespace {
             return MF_ERR_INTERNAL;
         }
 
-        out_result->final_score = 0;
-
-        if (weed_status == 1) {
-        out_result->decision = mf_strdup_safe("deny");
-        } else {
-            out_result->decision = mf_strdup_safe("pass");
-        }
+    out_result->final_score = weeder.final_score();
+    out_result->decision = mf_strdup_safe(weeder.decision().c_str());
 
         if (!out_result->decision) {
             return MF_ERR_OOM;

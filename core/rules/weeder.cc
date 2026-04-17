@@ -41,15 +41,19 @@ extern string int_to_string (int);
 int Weeder :: is_weed (Header* the_header)
 {
   int status;
+  last_score = 0;
+  last_decision = "pass";
 
   status = check_duplicates (the_header);
   if (status == 1)
     {
-#ifdef USE_SQLITE3_HEADERLOG
+    #ifdef USE_SQLITE3_HEADERLOG
       if (Preferences :: Instance ().use_headers_sqlite3 ()
           && Dblog :: Instance ().ready ())
         Dblog :: Instance ().log_decision (the_header, "duplicate", 0);
-#endif
+    #endif
+      last_decision = "duplicate";
+      last_score = 0;
       return 1;             // Spam.
     }
   else if (status < 0)
@@ -58,20 +62,24 @@ int Weeder :: is_weed (Header* the_header)
   status = check_allow_rules (the_header);
   if (status == 1)
     {
-#ifdef USE_SQLITE3_HEADERLOG
+    #ifdef USE_SQLITE3_HEADERLOG
       if (Preferences :: Instance ().use_headers_sqlite3 ()
           && Dblog :: Instance ().ready ())
         Dblog :: Instance ().log_decision (the_header, "deny-after-allow", 0);
-#endif
+    #endif
+      last_decision = "deny-after-allow";
+      last_score = 0;
       return 1;             // Spam.
     }
   else if (status == 0)
     {
-#ifdef USE_SQLITE3_HEADERLOG
+    #ifdef USE_SQLITE3_HEADERLOG
       if (Preferences :: Instance ().use_headers_sqlite3 ()
           && Dblog :: Instance ().ready ())
         Dblog :: Instance ().log_decision (the_header, "allow", 0);
-#endif
+    #endif
+      last_decision = "allow";
+      last_score = 0;
       return 0;             // Friend.
     }
   else if (status < 0)
@@ -80,32 +88,40 @@ int Weeder :: is_weed (Header* the_header)
   status = check_maxlength (the_header);
   if (status == 1)
     {
-#ifdef USE_SQLITE3_HEADERLOG
+    #ifdef USE_SQLITE3_HEADERLOG
       if (Preferences :: Instance ().use_headers_sqlite3 ()
           && Dblog :: Instance ().ready ())
         Dblog :: Instance ().log_decision (the_header, "deny-maxlength", 0);
-#endif
+    #endif
+      last_decision = "deny-maxlength";
+      last_score = 0;
       return 1;             // Spam.
     }
 
   status = check_deny_rules (the_header);
   if (status == 1)
     {
-#ifdef USE_SQLITE3_HEADERLOG
+    #ifdef USE_SQLITE3_HEADERLOG
       if (Preferences :: Instance ().use_headers_sqlite3 ()
           && Dblog :: Instance ().ready ())
         Dblog :: Instance ().log_decision (the_header, "deny", 0);
-#endif
+    #endif
+      last_decision = "deny";
+      last_score = 0;
       return 1;             // Spam.
     }
   else if (status < 0)
     return status;        // Error.
 
-  status = check_scores (the_header);
-  if (status == 1)
-    return 1;             // Spam. Entscheidung wird in check_scores() geloggt.
 
+  status = check_scores (the_header);
+  if (status == 1) {
+    return 1;             // Spam. Entscheidung wird in check_scores() geloggt.
+  } else if (status < 0) {
+    return status;
+  }
   return 0;               // Leave message alone.
+
 }
 
 // This function returns 1 if the message was considered being a
@@ -244,7 +260,6 @@ int Weeder :: check_allow_rules (Header* the_header) const
 		#endif
 		  return 1;
 		}
-
 	      return 0;
 	    }
 	}
@@ -703,36 +718,25 @@ int Weeder :: check_scores (Header* the_header) const
 	}
     }
 
-  if (msg_score >= Preferences :: Instance ().highscore ())
-    {
-      logger->print_msg ("Deny: "
-			 + *(the_header->from ()) + ": "
-			 + *(the_header->subject ()) + ", "
-			 + *(the_header->date ())
-			 + " [Score: "
-			 + int_to_string (msg_score)
-			 + "].",
-			 2);
-	#ifdef USE_SQLITE3_HEADERLOG
-      	if (Preferences :: Instance ().use_headers_sqlite3 ()
-          && Dblog :: Instance ().ready ())
-        Dblog :: Instance ().log_decision (the_header, "score-deny", msg_score);
-	#endif
-      return 1;
-    }
-  
-  logger->print_msg ("Pass: "
-		     + *(the_header->from ()) + ": "
-		     + *(the_header->subject ()) + ", "
-		     + *(the_header->date ())
-		     + " [Score: "
-		     + int_to_string (msg_score)
-		     + "].",
-		     5);
-	#ifdef USE_SQLITE3_HEADERLOG
-      	if (Preferences :: Instance ().use_headers_sqlite3 ()
-          && Dblog :: Instance ().ready ())
-        Dblog :: Instance ().log_decision (the_header, "pass", msg_score);
-	#endif
-  return 0;
+if (msg_score >= Preferences :: Instance ().highscore ()) {
+  last_score = msg_score;
+  last_decision = "score-deny";
+  logger->print_msg ("Deny: " + *(the_header->from ()) + ": " + *(the_header->subject ()) + ", " + *(the_header->date ()) + " [Score: " + int_to_string (msg_score) + "].", 2);
+#ifdef USE_SQLITE3_HEADERLOG
+  if (Preferences :: Instance ().use_headers_sqlite3 () && Dblog :: Instance ().ready ())
+    Dblog :: Instance ().log_decision (the_header, "score-deny", msg_score);
+#endif
+  return 1;
 }
+
+
+
+last_score = msg_score;
+last_decision = "pass";
+logger->print_msg ("Pass: " + *(the_header->from ()) + ": " + *(the_header->subject ()) + ", " + *(the_header->date ()) + " [Score: " + int_to_string (msg_score) + "].", 5);
+#ifdef USE_SQLITE3_HEADERLOG
+  if (Preferences :: Instance ().use_headers_sqlite3 () && Dblog :: Instance ().ready ())
+    Dblog :: Instance ().log_decision (the_header, "pass", msg_score);
+#endif
+return 0;
+
