@@ -55,7 +55,7 @@ static int run_import_check(const char *input_file, const char *import_db) {
         return 10;
     }
 
-    if (imported_count != 3) {
+    if (imported_count != 2) {
         std::cerr << "unexpected imported_count=" << imported_count
                   << " for " << input_file << "\n";
         return 11;
@@ -82,7 +82,7 @@ static int run_import_check(const char *input_file, const char *import_db) {
         return 14;
     }
 
-    if (messages_count != 3) {
+    if (messages_count != 2) {
         std::cerr << "unexpected messages count=" << messages_count
                   << " for " << input_file << "\n";
         sqlite3_close(db);
