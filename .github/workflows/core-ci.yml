@@ -18,8 +18,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build build-essential pkg-config flex bison libfl-dev libsqlite3-dev
 
-      - name: Build-Verzeichnis anlegen
-        run: cmake -S . -B build -G Ninja
+      - name: Build-Verzeichnis neu erzeugen
+        run: |
+          rm -rf build
+          cmake -S . -B build -G Ninja
 
       - name: Core bauen
         run: cmake --build build --verbose
