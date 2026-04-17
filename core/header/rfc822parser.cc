@@ -107,6 +107,8 @@
 #include "config.h"
 #endif
 
+FlexLexer* rfclexer = nullptr;
+
 // We want to give the Preferences object as parameter for yyparse
 // #define YYPARSE_PARAM param
 

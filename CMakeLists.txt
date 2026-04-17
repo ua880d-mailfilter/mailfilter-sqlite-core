@@ -41,6 +41,7 @@ set(MF_CORE_SOURCES
     ${MF_CORE_DIR}/rules/weeder.cc
     ${MF_CORE_DIR}/import/mf_header_db_import.cc
     ${MF_CORE_DIR}/config/preferences.cc
+    ${MF_COMPAT_DIR}/legacy_utils.cc
 )
 
 add_library(mailfilter_sqlite_core SHARED ${MF_CORE_SOURCES})
