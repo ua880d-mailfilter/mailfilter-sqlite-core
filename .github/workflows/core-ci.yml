@@ -36,3 +36,10 @@ jobs:
       - name: Smoke-Test Import
         run: |
           ./build/import_smoke_test
+
+      - name: Upload smoke test database
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-db
+          path: |
+            build/test-import.sqlite3
