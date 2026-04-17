@@ -14,6 +14,8 @@ namespace {
     static bool g_initialized = false;
     static mf_config_t g_cfg{};
 
+    static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg);
+
     static char *mf_strdup_safe(const char *s) {
         if (!s) return nullptr;
         const size_t n = std::strlen(s) + 1;
