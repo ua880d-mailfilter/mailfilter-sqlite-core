@@ -5,6 +5,7 @@
 #include "preferences.hh"
 #include "header/header.hh"
 #include "mf_header_parse_utils.h"
+#include "weeder.hh"
 
 #include <cstdlib>
 #include <cstring>
@@ -147,6 +148,37 @@ namespace {
         return MF_OK;
     }
 
+    static mf_error_t mf_analyze_header_object(
+        Header *hdr,
+        mf_result_t *out_result
+    )
+    {
+        if (!hdr || !out_result) {
+            return MF_ERR_INVALID_ARG;
+        }
+
+        Weeder weeder;
+        const int weed_status = weeder.is_weed(hdr);
+
+        if (weed_status < 0) {
+            return MF_ERR_INTERNAL;
+        }
+
+        out_result->final_score = 0;
+
+        if (weed_status == 1) {
+        out_result->decision = mf_strdup_safe("deny");
+        } else {
+            out_result->decision = mf_strdup_safe("pass");
+        }
+
+        if (!out_result->decision) {
+            return MF_ERR_OOM;
+        }
+
+        return MF_OK;
+    }
+
 }
 
 const char *mf_error_string(mf_error_t err) {
@@ -236,11 +268,8 @@ mf_error_t mf_analyze_header_text(
         return err;
     }
 
-    /* Phase 1:
-       Header wurde jetzt real aufgebaut.
-       Die eigentliche Weeder-/Score-Logik folgt im nächsten Schritt. */
-    out_result->decision = mf_strdup_safe("pass");
-    out_result->final_score = 0;
+
+    err = mf_analyze_header_object(hdr, out_result);
 
     delete hdr;
 
