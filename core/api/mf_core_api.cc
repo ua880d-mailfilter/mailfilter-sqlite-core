@@ -199,22 +199,113 @@ mf_error_t mf_import_header_file_with_options(
     if (!mf_is_initialized()) {
         return MF_ERR_NOT_INITIALIZED;
     }
+    if (!options->target_db_path || !*options->target_db_path) {
+        return MF_ERR_INVALID_ARG;
+    }
     if (out_imported_count) {
         *out_imported_count = 0;
     }
 
-    /*
-     * TODO Phase 1:
-     * - mailheader.log / sequenzielle Headerdatei lesen
-     * - Blöcke mit . als Ende erkennen
-     * - messages + header_entries schreiben
-     *
-     * TODO Phase 2:
-     * - analyze_after_import auswerten
-     * - Parser / Weeder laufen lassen
-     * - optional rule_hits füllen
-     */
-    return MF_ERR_UNSUPPORTED;
+    FILE *fp = std::fopen(input_path, "rb");
+    if (!fp) {
+        return MF_ERR_IO;
+    }
+
+    if (options->reset_target_db && !options->dry_run) {
+        std::remove(options->target_db_path);
+    }
+
+    if (!options->dry_run) {
+        mf_error_t err;
+        if (options->schema_from_db_path && *options->schema_from_db_path) {
+            err = mf_clone_schema_from_db_impl(
+                options->schema_from_db_path,
+                options->target_db_path
+            );
+        } else {
+            err = mf_create_empty_db_impl(options->target_db_path);
+        }
+
+        if (err != MF_OK) {
+            std::fclose(fp);
+            return err;
+        }
+    }
+
+    char buffer[8192];
+    std::string block;
+    int imported = 0;
+
+    auto flush_block = [&](void) -> mf_error_t {
+        if (block.empty()) {
+            return MF_OK;
+        }
+
+        char *raw_headers = nullptr;
+        mf_error_t err = mf_parse_sequential_header_block_text(
+            block.c_str(),
+            &raw_headers
+        );
+        if (err != MF_OK) {
+            return err;
+        }
+
+        if (!options->dry_run) {
+            char *msg_log_id = nullptr;
+            err = mf_import_header_text_to_db(
+                raw_headers,
+                options,
+                imported + 1,
+                &msg_log_id
+            );
+            std::free(msg_log_id);
+        }
+
+        std::free(raw_headers);
+
+        if (err != MF_OK) {
+            return err;
+        }
+
+        ++imported;
+        block.clear();
+        return MF_OK;
+    };
+
+    while (std::fgets(buffer, sizeof(buffer), fp) != nullptr) {
+        std::string line(buffer);
+
+        while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
+            line.pop_back();
+        }
+
+        block.append(line);
+        block.push_back('\n');
+
+        if (line == ".") {
+            mf_error_t err = flush_block();
+            if (err != MF_OK) {
+                std::fclose(fp);
+                return err;
+            }
+        }
+    }
+
+    if (!block.empty()) {
+        mf_error_t err = flush_block();
+        if (err != MF_OK) {
+            std::fclose(fp);
+            return err;
+        }
+    }
+
+    std::fclose(fp);
+
+    if (out_imported_count) {
+        *out_imported_count = imported;
+    }
+
+    return MF_OK;
 }
 
 mf_error_t mf_import_header_text_with_options(
