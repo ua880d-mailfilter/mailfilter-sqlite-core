@@ -14,9 +14,17 @@ add_compile_options(
     -Wno-missing-field-initializers
 )
 
+
+
+option(MF_ENABLE_ASAN "Enable AddressSanitizer for debug-style CI runs" OFF)
 option(MF_ENABLE_ANDROID_LOG "Use Android logcat logging backend" ON)
 option(MF_ENABLE_EXPLANATIONS "Enable explanation JSON generation" ON)
 option(MF_ENABLE_ADDITIVE_TABLES "Allow additive Android-only tables" ON)
+
+if(MF_ENABLE_ASAN)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address)
+endif()
 
 set(MF_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(MF_COMPAT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/compat)

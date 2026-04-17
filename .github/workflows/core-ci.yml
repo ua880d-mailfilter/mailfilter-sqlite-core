@@ -21,7 +21,7 @@ jobs:
       - name: Build-Verzeichnis neu erzeugen
         run: |
           rm -rf build
-          cmake -S . -B build -G Ninja
+          cmake -S . -B build -G Ninja -DMF_ENABLE_ASAN=ON
 
       - name: Core bauen
         run: cmake --build build --verbose
