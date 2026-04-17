@@ -2,6 +2,7 @@
 #include "mf_db_open.h"
 #include "mf_seq_header_import.h"
 #include "mf_header_db_import.h"
+#include "preferences.hh"
 
 #include <cstdlib>
 #include <cstring>
@@ -21,6 +22,32 @@ namespace {
         std::memcpy(p, s, n);
         return p;
     }
+
+    static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
+    {
+        if (!cfg) {
+            return MF_ERR_INVALID_ARG;
+        }
+
+        if (!cfg->rc_path || !*cfg->rc_path) {
+            return MF_ERR_RC_LOAD;
+        }
+
+        Preferences &prefs = Preferences::Instance();
+        prefs.init();
+        prefs.set_rc_file(cfg->rc_path);
+
+        if (!prefs.open(cfg->rc_path)) {
+            return MF_ERR_RC_LOAD;
+        }
+
+        if (!prefs.load()) {
+            return MF_ERR_RC_LOAD;
+        }
+
+        return MF_OK;
+    }
+
 }
 
 const char *mf_error_string(mf_error_t err) {
@@ -250,16 +277,35 @@ mf_error_t mf_import_header_file_with_options(
             return err;
         }
 
-        if (!options->dry_run) {
-            char *msg_log_id = nullptr;
+    if (!options->dry_run) {
+        char *msg_log_id = nullptr;
+
+        if (options->analyze_after_import) {
+            err = mf_prepare_analysis_preferences(&g_cfg);
+            if (err == MF_OK) {
+                /* Phase 1:
+                 * RC ist geladen.
+                 * Der eigentliche Weeder-/rule_hits-Pfad folgt im nächsten Schritt.
+                 * Bis dahin bleibt das DB-Schreiben identisch.
+                 */
+                err = mf_import_header_text_to_db(
+                    raw_headers,
+                    options,
+                    imported + 1,
+                    &msg_log_id
+                );
+            }
+        } else {
             err = mf_import_header_text_to_db(
                 raw_headers,
                 options,
                 imported + 1,
                 &msg_log_id
             );
-            std::free(msg_log_id);
         }
+
+        std::free(msg_log_id);
+    }
 
         std::free(raw_headers);
 
@@ -337,6 +383,13 @@ mf_error_t mf_import_header_text_with_options(
         *out_imported_count = 1;
     }
     return err;
+
+    if (options->analyze_after_import) {
+        err = mf_prepare_analysis_preferences(&g_cfg);
+        if (err != MF_OK) {
+            return err;
+        }
+    }
 }
 
 mf_error_t mf_validate_schema(void) {
