@@ -61,7 +61,7 @@ static int exec_sql(sqlite3 *db, const char *sql) {
 
 static mf_error_t create_core_schema(sqlite3 *db) {
     const char *sql_messages =
-        "CREATE TABLE IF NOT EXISTS MESSAGES ("
+        "CREATE TABLE IF NOT EXISTS messages ("
         " msg_log_id TEXT PRIMARY KEY,"
         " message_id TEXT,"
         " from_addr TEXT,"
@@ -71,38 +71,55 @@ static mf_error_t create_core_schema(sqlite3 *db) {
         " date_hdr TEXT,"
         " msg_size INTEGER,"
         " decision TEXT,"
-        " final_score INTEGER,"
-        " created_at TEXT DEFAULT CURRENT_TIMESTAMP"
+        " final_score INTEGER DEFAULT 0,"
+        " created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
         ");";
 
     const char *sql_header_entries =
-        "CREATE TABLE IF NOT EXISTS HEADER_ENTRIES ("
+        "CREATE TABLE IF NOT EXISTS header_entries ("
         " id INTEGER PRIMARY KEY AUTOINCREMENT,"
         " msg_log_id TEXT NOT NULL,"
-        " ordinal INTEGER,"
-        " tag TEXT,"
-        " body TEXT,"
-        " created_at TEXT DEFAULT CURRENT_TIMESTAMP"
+        " ordinal INTEGER NOT NULL,"
+        " tag TEXT NOT NULL,"
+        " body TEXT NOT NULL,"
+        " created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
         ");";
 
     const char *sql_rule_hits =
-        "CREATE TABLE IF NOT EXISTS RULE_HITS ("
+        "CREATE TABLE IF NOT EXISTS rule_hits ("
         " id INTEGER PRIMARY KEY AUTOINCREMENT,"
         " msg_log_id TEXT NOT NULL,"
-        " phase TEXT,"
+        " phase TEXT NOT NULL,"
         " expression TEXT,"
-        " is_negative INTEGER,"
-        " matched INTEGER,"
+        " is_negative INTEGER NOT NULL DEFAULT 0,"
+        " matched INTEGER NOT NULL DEFAULT 0,"
         " header_tag TEXT,"
         " header_body TEXT,"
-        " normalized_subject TEXT,"
-        " score_delta INTEGER,"
-        " created_at TEXT DEFAULT CURRENT_TIMESTAMP"
+        " normalized_subject INTEGER NOT NULL DEFAULT 0,"
+        " score_delta INTEGER NOT NULL DEFAULT 0,"
+        " created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
         ");";
+
+    const char *sql_idx_header_entries_msg_log_id =
+        "CREATE INDEX IF NOT EXISTS idx_header_entries_msg_log_id "
+        "ON header_entries(msg_log_id);";
+
+    const char *sql_idx_rule_hits_msg_log_id =
+        "CREATE INDEX IF NOT EXISTS idx_rule_hits_msg_log_id "
+        "ON rule_hits(msg_log_id);";
+
+    const char *sql_idx_rule_hits_phase =
+        "CREATE INDEX IF NOT EXISTS idx_rule_hits_phase "
+        "ON rule_hits(phase);";
 
     if (exec_sql(db, sql_messages) != SQLITE_OK) return MF_ERR_DB_SCHEMA;
     if (exec_sql(db, sql_header_entries) != SQLITE_OK) return MF_ERR_DB_SCHEMA;
     if (exec_sql(db, sql_rule_hits) != SQLITE_OK) return MF_ERR_DB_SCHEMA;
+
+    if (exec_sql(db, sql_idx_header_entries_msg_log_id) != SQLITE_OK) return MF_ERR_DB_SCHEMA;
+    if (exec_sql(db, sql_idx_rule_hits_msg_log_id) != SQLITE_OK) return MF_ERR_DB_SCHEMA;
+    if (exec_sql(db, sql_idx_rule_hits_phase) != SQLITE_OK) return MF_ERR_DB_SCHEMA;
+
     return MF_OK;
 }
 
