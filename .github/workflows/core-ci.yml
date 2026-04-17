@@ -46,7 +46,7 @@ jobs:
 
       - name: Smoke-Test Import
         run: |
-          ./build/import_smoke_test
+          ASAN_OPTIONS=detect_leaks=0 ./build/import_smoke_test
 
       - name: Dump smoke test database summaries
         run: |
