@@ -738,4 +738,4 @@ logger->print_msg ("Pass: " + *(the_header->from ()) + ": " + *(the_header->subj
     Dblog :: Instance ().log_decision (the_header, "pass", msg_score);
 #endif
 return 0;
-
+}
