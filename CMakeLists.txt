@@ -117,4 +117,5 @@ target_include_directories(import_smoke_test
 target_link_libraries(import_smoke_test
     PRIVATE
         mailfilter_sqlite_core
+        sqlite3
 )
