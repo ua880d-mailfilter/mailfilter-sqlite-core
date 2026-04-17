@@ -567,7 +567,7 @@ int Weeder :: check_deny_rules (Header* the_header) const
 
 // This function returns the score the message achieved.
 
-int Weeder :: check_scores (Header* the_header) const
+int Weeder :: check_scores (Header* the_header)
 {
   Feedback* logger = Feedback :: Instance ();
 
@@ -728,7 +728,6 @@ if (msg_score >= Preferences :: Instance ().highscore ()) {
 #endif
   return 1;
 }
-
 
 
 last_score = msg_score;
