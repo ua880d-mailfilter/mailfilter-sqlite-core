@@ -30,3 +30,7 @@ jobs:
           name: core-build-linux
           path: |
             build
+
+      - name: Smoke-Test Import
+        run: |
+          ./build/import_smoke_test

@@ -92,3 +92,27 @@ endif()
 set_target_properties(mailfilter_sqlite_core PROPERTIES
     OUTPUT_NAME "mailfilter_sqlite_core"
 )
+
+
+add_executable(import_smoke_test
+    tests/import_smoke_test.cc
+)
+
+target_include_directories(import_smoke_test
+    PRIVATE
+        ${MF_INCLUDE_DIR}
+        ${MF_COMPAT_DIR}
+        ${MF_CORE_DIR}
+        ${MF_CORE_DIR}/api
+        ${MF_CORE_DIR}/db
+        ${MF_CORE_DIR}/header
+        ${MF_CORE_DIR}/rules
+        ${MF_CORE_DIR}/config
+        ${MF_CORE_DIR}/parser
+        ${MF_CORE_DIR}/import
+)
+
+target_link_libraries(import_smoke_test
+    PRIVATE
+        mailfilter_sqlite_core
+)
