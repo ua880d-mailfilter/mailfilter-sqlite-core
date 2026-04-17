@@ -87,30 +87,43 @@ namespace {
         return err;
     }
 
-    static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
-    {
-        if (!cfg) {
-            return MF_ERR_INVALID_ARG;
-        }
+//### 0:38 fix
+static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
+{
+    static std::string loaded_rc_path;
+    static bool loaded_ok = false;
 
-        if (!cfg->rc_path || !*cfg->rc_path) {
-            return MF_ERR_RC_LOAD;
-        }
+    if (!cfg) {
+        return MF_ERR_INVALID_ARG;
+    }
 
-        Preferences &prefs = Preferences::Instance();
-        prefs.init();
-        prefs.set_rc_file(cfg->rc_path);
+    if (!cfg->rc_path || !*cfg->rc_path) {
+        return MF_ERR_RC_LOAD;
+    }
 
-        if (!prefs.open(cfg->rc_path)) {
-            return MF_ERR_RC_LOAD;
-        }
-
-        if (!prefs.load()) {
-            return MF_ERR_RC_LOAD;
-        }
-
+    if (loaded_ok && loaded_rc_path == cfg->rc_path) {
         return MF_OK;
     }
+
+    Preferences &prefs = Preferences::Instance();
+
+    prefs.kill();
+
+    prefs.set_rc_file(cfg->rc_path);
+
+    if (!prefs.open(cfg->rc_path)) {
+        return MF_ERR_RC_LOAD;
+    }
+
+    if (!prefs.load()) {
+        return MF_ERR_RC_LOAD;
+    }
+
+    loaded_rc_path = cfg->rc_path;
+    loaded_ok = true;
+    return MF_OK;
+}
+//###
 
     static mf_error_t mf_build_header_from_text(
         const char *raw_headers,
