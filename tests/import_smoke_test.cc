@@ -61,7 +61,7 @@ static int run_import_check(const char *input_file, const char *import_db, int a
     opts.decision = "imported";
     opts.reset_target_db = 1;
     opts.analyze_after_import = analyze_after_import;
-    opts.fill_rule_hits = 0;
+    opts.fill_rule_hits = 0 analyze_after_import ? 1 : 0;
     opts.dry_run = 0;
 
     int imported_count = 0;
@@ -170,12 +170,14 @@ static int run_import_check(const char *input_file, const char *import_db, int a
             return 21;
         }
 
-        //if (rule_hits_count <= 0) {
-        //    std::cerr << "expected rule_hits > 0 but got " << rule_hits_count
-        //              << " for " << input_file << "\n";
-        //    sqlite3_close(db);
-        //    return 22;
-        //}
+// Test new
+        if (rule_hits_count <= 0) {
+            std::cerr << "expected rule_hits > 0 but got " << rule_hits_count
+                      << " for " << input_file << "\n";
+            sqlite3_close(db);
+            return 22;
+        }
+// Ende Test
 
         std::cout << "ANALYZE file=" << input_file
                   << " decision=" << decision

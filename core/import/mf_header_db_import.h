@@ -26,4 +26,17 @@ mf_error_t mf_clone_schema_from_db_impl(
     const char *target_db_path
 );
 
+mf_error_t mf_insert_rule_hit(
+    const char *target_db_path,
+    const char *msg_log_id,
+    const char *phase,
+    const char *expression,
+    int is_negative,
+    int matched,
+    const char *header_tag,
+    const char *header_body,
+    int normalized_subject,
+    int score_delta
+);
+
 #endif

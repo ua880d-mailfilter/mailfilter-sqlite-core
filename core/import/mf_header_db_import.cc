@@ -302,3 +302,58 @@ mf_error_t mf_update_message_analysis_result(
 
     return MF_OK;
 }
+
+mf_error_t mf_insert_rule_hit(
+    const char *target_db_path,
+    const char *msg_log_id,
+    const char *phase,
+    const char *expression,
+    int is_negative,
+    int matched,
+    const char *header_tag,
+    const char *header_body,
+    int normalized_subject,
+    int score_delta
+) {
+    if (!target_db_path || !msg_log_id || !phase) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    sqlite3 *db = nullptr;
+    if (sqlite3_open(target_db_path, &db) != SQLITE_OK) {
+        if (db) sqlite3_close(db);
+        return MF_ERR_DB_OPEN;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+    const char *sql =
+        "INSERT INTO rule_hits "
+        "(msg_log_id, phase, expression, is_negative, matched, header_tag, header_body, normalized_subject, score_delta) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_close(db);
+        return MF_ERR_DB_WRITE;
+    }
+
+    sqlite3_bind_text(stmt, 1, msg_log_id, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, phase, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, expression ? expression : "", -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 4, is_negative);
+    sqlite3_bind_int(stmt, 5, matched);
+    sqlite3_bind_text(stmt, 6, header_tag ? header_tag : "", -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 7, header_body ? header_body : "", -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 8, normalized_subject);
+    sqlite3_bind_int(stmt, 9, score_delta);
+
+    const int rc = sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    if (rc != SQLITE_DONE) {
+        return MF_ERR_DB_WRITE;
+    }
+
+    return MF_OK;
+}

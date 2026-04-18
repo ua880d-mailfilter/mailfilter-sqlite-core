@@ -76,6 +76,11 @@ namespace {
             decision,
             final_score
         );
+//# New
+        if (err == MF_OK && options->fill_rule_hits) {
+            mf_write_minimal_score_rule_hit(options, msg_log_id, final_score);
+        }
+//# New ende
 
         if (out_msg_log_id) {
             *out_msg_log_id = msg_log_id;
@@ -189,7 +194,35 @@ static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
         return MF_OK;
     }
 
+static void mf_write_minimal_score_rule_hit(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    int final_score
+)
+{
+    if (!options || !options->target_db_path || !msg_log_id) {
+        return;
+    }
+
+    if (final_score == 0) {
+        return;
+    }
+
+    (void)mf_insert_rule_hit(
+        options->target_db_path,
+        msg_log_id,
+        "score",
+        "aggregate-score",
+        0,
+        1,
+        "",
+        "",
+        0,
+        final_score
+    );
 }
+
+} // Ende Namespace
 
 const char *mf_error_string(mf_error_t err) {
     switch (err) {
