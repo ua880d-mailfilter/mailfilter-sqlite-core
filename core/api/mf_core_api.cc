@@ -30,6 +30,19 @@ namespace {
         return p;
     }
 
+
+    static mf_error_t mf_build_header_from_text(
+        const char *raw_headers,
+        Header **out_header
+   );
+
+    static mf_error_t mf_analyze_header_object(
+       Header *hdr,
+       Weeder &weeder,
+       mf_result_t *out_result
+    );
+
+
 /*    static void mf_write_minimal_score_rule_hit(
         const mf_import_options_t *options,
         const char *msg_log_id,
@@ -82,45 +95,50 @@ static void mf_write_score_rule_hits(
             return err;
         }
 
-        Preferences::Instance().set_headers_sqlite3_file(options->target_db_path);
+        char *msg_log_id = nullptr;
+        err = mf_import_header_text_to_db(
+            raw_headers,
+            options,
+            serial,
+            &msg_log_id
+        );
+        if (err != MF_OK) {
+            return err;
+        }
 
-//######NEW########
+        Header *hdr = nullptr;
+        err = mf_build_header_from_text(raw_headers, &hdr);
+        if (err != MF_OK) {
+            std::free(msg_log_id);
+            return err;
+        }
 
-    Header *hdr = nullptr;
-    err = mf_build_header_from_text(raw_headers, &hdr);
-    if (err != MF_OK) {
-        std::free(msg_log_id);
-        return err;
-    }
+        mf_result_t result{};
+        Weeder weeder;
 
-    mf_result_t result{};
-    Weeder weeder;
+        err = mf_analyze_header_object(hdr, weeder, &result);
 
-    err = mf_analyze_header_object(hdr, weeder, &result);
+        delete hdr;
 
-    delete hdr;
+        if (err != MF_OK) {
+            std::free(msg_log_id);
+            mf_free_result(&result);
+            return err;
+        }
 
-    if (err != MF_OK) {
-        std::free(msg_log_id);
-        mf_free_result(&result);
-        return err;
-    }
+        const char *decision = result.decision ? result.decision : "pass";
+        const int final_score = result.final_score;
 
-    const char *decision = result.decision ? result.decision : "pass";
-    const int final_score = result.final_score;
+        err = mf_update_message_analysis_result(
+            options->target_db_path,
+            msg_log_id,
+            decision,
+            final_score
+        );
 
-    err = mf_update_message_analysis_result(
-        options->target_db_path,
-        msg_log_id,
-        decision,
-        final_score
-    );
-
-    if (err == MF_OK && options->fill_rule_hits) {
-        mf_write_score_rule_hits(options, msg_log_id, weeder);
-    }
-
-//## New ende
+        if (err == MF_OK && options->fill_rule_hits) {
+            mf_write_score_rule_hits(options, msg_log_id, weeder);
+        }
 
         if (out_msg_log_id) {
             *out_msg_log_id = msg_log_id;
@@ -355,6 +373,11 @@ mf_error_t mf_analyze_header_text(
     Weeder weeder;
     err = mf_analyze_header_object(hdr, weeder, out_result);
     delete hdr;
+
+    if (err != MF_OK) {
+        mf_free_result(out_result);
+        return err;
+    }
 
     if (!out_result->decision) {
         mf_free_result(out_result);
