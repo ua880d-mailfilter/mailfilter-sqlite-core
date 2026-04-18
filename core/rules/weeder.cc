@@ -43,6 +43,7 @@ int Weeder :: is_weed (Header* the_header)
   int status;
   last_score = 0;
   last_decision = "pass";
+  last_score_hits.clear ();
 
   status = check_duplicates (the_header);
   if (status == 1)
@@ -630,6 +631,17 @@ int Weeder :: check_scores (Header* the_header)
 	      if (ordinary_match || normalised_match)
 	        {
 	          msg_score += cur_score->score ();
+	         // ##
+	          ScoreHit hit;
+                  hit.expression = cur_score->expression ();
+                  hit.score_delta = cur_score->score ();
+                  hit.is_negative = (cur_score->score () < 0) ? 1 : 0;
+                  hit.matched = 1;
+                  hit.header_tag = "";
+                  hit.header_body = "";
+                  hit.normalized_subject = 0;
+                  last_score_hits.push_back (hit);
+	         // ##
 	          logger->print_msg ("Score: \""
 				     + cur_score->expression ()
 				     + "\" matches \""
@@ -691,6 +703,17 @@ int Weeder :: check_scores (Header* the_header)
 	      if (cur_entry + 1 == the_header->entries ()->end ())
 		{
 		  msg_score += cur_score->score ();
+		 //###
+		  ScoreHit hit;
+                  hit.expression = cur_score->expression ();
+                  hit.score_delta = cur_score->score ();
+                  hit.is_negative = (cur_score->score () < 0) ? 1 : 0;
+                  hit.matched = 1;
+                  hit.header_tag = "";
+                  hit.header_body = "";
+                  hit.normalized_subject = 0;
+                  last_score_hits.push_back (hit);
+		 // ###
 		  logger->print_msg ("Score: <> \""
 				     + cur_score->expression ()
 				     + "\" did not match "
