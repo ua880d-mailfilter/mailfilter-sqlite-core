@@ -61,7 +61,7 @@ static int run_import_check(const char *input_file, const char *import_db, int a
     opts.decision = "imported";
     opts.reset_target_db = 1;
     opts.analyze_after_import = analyze_after_import;
-    opts.fill_rule_hits = 0 analyze_after_import ? 1 : 0;
+    opts.fill_rule_hits = analyze_after_import ? 1 : 0;
     opts.dry_run = 0;
 
     int imported_count = 0;
