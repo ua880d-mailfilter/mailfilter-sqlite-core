@@ -30,6 +30,12 @@ namespace {
         return p;
     }
 
+    static void mf_write_minimal_score_rule_hit(
+        const mf_import_options_t *options,
+        const char *msg_log_id,
+        int final_score
+    );
+
     static mf_error_t mf_analyze_imported_header_block(
         const char *raw_headers,
         const mf_import_options_t *options,
