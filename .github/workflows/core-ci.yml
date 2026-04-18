@@ -53,10 +53,13 @@ jobs:
           sqlite3 build/test-import-lf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-lf-summary.txt
           sqlite3 build/test-import-lf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-lf-summary.txt
           sqlite3 build/test-import-lf.sqlite3 "SELECT msg_log_id, message_id, subject FROM messages ORDER BY msg_log_id LIMIT 5;" >> build/test-import-lf-summary.txt
+	  sqlite3 build/test-import-lf.sqlite3 "SELECT phase, expression, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-lf-summary.txt
 
           sqlite3 build/test-import-crlf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-crlf-summary.txt
           sqlite3 build/test-import-crlf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-crlf-summary.txt
           sqlite3 build/test-import-crlf.sqlite3 "SELECT msg_log_id, message_id, subject FROM messages ORDER BY msg_log_id LIMIT 5;" >> build/test-import-crlf-summary.txt
+          sqlite3 build/test-import-crlf.sqlite3 "SELECT phase, expression, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-crlf-summary.txt
+
 
       - name: Upload smoke test database
         uses: actions/upload-artifact@v4
