@@ -30,11 +30,41 @@ namespace {
         return p;
     }
 
-    static void mf_write_minimal_score_rule_hit(
+/*    static void mf_write_minimal_score_rule_hit(
         const mf_import_options_t *options,
         const char *msg_log_id,
         int final_score
     );
+*/
+//##NEW
+
+static void mf_write_score_rule_hits(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    const Weeder &weeder
+)
+{
+    if (!options || !options->target_db_path || !msg_log_id) {
+        return;
+    }
+
+    const auto &hits = weeder.score_hits();
+    for (const auto &hit : hits) {
+        (void)mf_insert_rule_hit(
+            options->target_db_path,
+            msg_log_id,
+            "score",
+            hit.expression.c_str(),
+            hit.is_negative,
+            hit.matched,
+            hit.header_tag.c_str(),
+            hit.header_body.c_str(),
+            hit.normalized_subject,
+            hit.score_delta
+        );
+    }
+}
+//# Ende NEW
 
     static mf_error_t mf_analyze_imported_header_block(
         const char *raw_headers,
@@ -54,39 +84,43 @@ namespace {
 
         Preferences::Instance().set_headers_sqlite3_file(options->target_db_path);
 
-        char *msg_log_id = nullptr;
-        err = mf_import_header_text_to_db(
-            raw_headers,
-            options,
-            serial,
-            &msg_log_id
-        );
-        if (err != MF_OK) {
-            return err;
-        }
+//######NEW########
 
-        mf_result_t result{};
-        err = mf_analyze_header_text(raw_headers, &result);
-        if (err != MF_OK) {
-            std::free(msg_log_id);
-            mf_free_result(&result);
-            return err;
-        }
+    Header *hdr = nullptr;
+    err = mf_build_header_from_text(raw_headers, &hdr);
+    if (err != MF_OK) {
+        std::free(msg_log_id);
+        return err;
+    }
 
-        const char *decision = result.decision ? result.decision : "pass";
-        const int final_score = result.final_score;
+    mf_result_t result{};
+    Weeder weeder;
 
-        err = mf_update_message_analysis_result(
-            options->target_db_path,
-            msg_log_id,
-            decision,
-            final_score
-        );
-//# New
-        if (err == MF_OK && options->fill_rule_hits) {
-            mf_write_minimal_score_rule_hit(options, msg_log_id, final_score);
-        }
-//# New ende
+    err = mf_analyze_header_object(hdr, weeder, &result);
+
+    delete hdr;
+
+    if (err != MF_OK) {
+        std::free(msg_log_id);
+        mf_free_result(&result);
+        return err;
+    }
+
+    const char *decision = result.decision ? result.decision : "pass";
+    const int final_score = result.final_score;
+
+    err = mf_update_message_analysis_result(
+        options->target_db_path,
+        msg_log_id,
+        decision,
+        final_score
+    );
+
+    if (err == MF_OK && options->fill_rule_hits) {
+        mf_write_score_rule_hits(options, msg_log_id, weeder);
+    }
+
+//## New ende
 
         if (out_msg_log_id) {
             *out_msg_log_id = msg_log_id;
@@ -173,9 +207,10 @@ static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
         *out_header = hdr;
         return MF_OK;
     }
-
+// start
     static mf_error_t mf_analyze_header_object(
         Header *hdr,
+        Weeder &weeder,
         mf_result_t *out_result
     )
     {
@@ -183,15 +218,13 @@ static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
             return MF_ERR_INVALID_ARG;
         }
 
-        Weeder weeder;
         const int weed_status = weeder.is_weed(hdr);
-
         if (weed_status < 0) {
             return MF_ERR_INTERNAL;
         }
 
-    out_result->final_score = weeder.final_score();
-    out_result->decision = mf_strdup_safe(weeder.decision().c_str());
+        out_result->final_score = weeder.final_score();
+        out_result->decision = mf_strdup_safe(weeder.decision().c_str());
 
         if (!out_result->decision) {
             return MF_ERR_OOM;
@@ -199,7 +232,8 @@ static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
 
         return MF_OK;
     }
-
+    
+/* Testweise raus
 static void mf_write_minimal_score_rule_hit(
     const mf_import_options_t *options,
     const char *msg_log_id,
@@ -227,6 +261,7 @@ static void mf_write_minimal_score_rule_hit(
         final_score
     );
 }
+*/
 
 } // Ende Namespace
 
@@ -317,9 +352,8 @@ mf_error_t mf_analyze_header_text(
         return err;
     }
 
-
-    err = mf_analyze_header_object(hdr, out_result);
-
+    Weeder weeder;
+    err = mf_analyze_header_object(hdr, weeder, out_result);
     delete hdr;
 
     if (!out_result->decision) {
