@@ -232,7 +232,7 @@ int main() {
 
     rc = run_import_check(
         "build/sample-mailheader-crlf.log",
-        "build/test-import-crlf.sqlite3",0
+        "build/test-import-crlf.sqlite3",1
     );
     if (rc != 0) {
         mf_shutdown();
