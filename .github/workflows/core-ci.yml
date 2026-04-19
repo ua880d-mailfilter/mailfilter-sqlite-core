@@ -50,29 +50,38 @@ jobs:
 
       - name: Dump smoke test database summaries
         run: |
-          sqlite3 build/test-import-lf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-lf-summary.txt
-          sqlite3 build/test-import-lf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-lf-summary.txt
-          sqlite3 build/test-import-lf.sqlite3 "SELECT msg_log_id, message_id, subject FROM messages ORDER BY msg_log_id LIMIT 5;" >> build/test-import-lf-summary.txt
-          sqlite3 build/test-import-lf.sqlite3 "SELECT phase, expression, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-lf-summary.txt
-
-          sqlite3 build/test-import-crlf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-crlf-summary.txt
-          sqlite3 build/test-import-crlf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-crlf-summary.txt
-          sqlite3 build/test-import-crlf.sqlite3 "SELECT msg_log_id, message_id, subject FROM messages ORDER BY msg_log_id LIMIT 5;" >> build/test-import-crlf-summary.txt
-          sqlite3 build/test-import-crlf.sqlite3 "SELECT phase, expression, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-crlf-summary.txt
-
+      - name: Dump smoke test database summaries
+        run: |
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT 'rule_hits', COUNT(*) FROM rule_hits;" >> build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT msg_log_id, decision, final_score FROM messages ORDER BY msg_log_id;" >> build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT phase, expression, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT 'rule_hits', COUNT(*) FROM rule_hits;" >> build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT msg_log_id, decision, final_score FROM messages ORDER BY msg_log_id;" >> build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT phase, expression, matched, is_negative, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-score-crlf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-score-crlf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT 'rule_hits', COUNT(*) FROM rule_hits;" >> build/test-import-score-crlf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT msg_log_id, decision, final_score FROM messages ORDER BY msg_log_id;" >> build/test-import-score-crlf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT phase, expression, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-score-crlf-summary.txt
 
       - name: Upload smoke test database
         uses: actions/upload-artifact@v4
         with:
           name: smoke-test-db
           path: |
-            build/test-import-lf.sqlite3
-            build/test-import-crlf.sqlite3
+            build/test-import-score-lf.sqlite3
+            build/test-import-allowdeny-lf.sqlite3
+            build/test-import-score-crlf.sqlite3
 
       - name: Upload smoke test summary
         uses: actions/upload-artifact@v4
         with:
           name: smoke-test-summary
           path: |
-            build/test-import-lf-summary.txt
-            build/test-import-crlf-summary.txt
+            build/test-import-score-lf-summary.txt
+            build/test-import-allowdeny-lf-summary.txt
+            build/test-import-score-crlf-summary.txt
