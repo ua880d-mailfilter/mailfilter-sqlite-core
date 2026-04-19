@@ -10,9 +10,5 @@ SCORE -1="^From:"
 SCORE +1="^To:"
 SCORE +50="^Received:"
 
-
 ALLOW="^X-Test-Allow:"
-
-ALLOW="^Subject:.*(Beleg|Zahlung)"
-
-DENY= "^X-Test-Deny:"
+DENY="^X-Test-Deny:"
