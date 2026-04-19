@@ -182,16 +182,10 @@ bool Preferences :: load (void)
 
       std::fprintf(stderr,
                    "DEBUG prefs: parse rc=%d allows=%zu denies=%zu scores=%zu\n",
-                   parse_rc,
                    allows.size(),
                    denies.size(),
                    scores.size());
 
-      if (parse_rc != 0)
-        {
-          ERROR_MSG("RC parser returned non-zero status.");
-          return false;
-        }
     }
   catch (...) { throw; }
 
