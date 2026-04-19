@@ -7,6 +7,7 @@
 #include "mf_header_parse_utils.h"
 #include "weeder.hh"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -220,6 +221,13 @@ static void mf_write_deny_rule_hits(
 
 static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
 {
+// Debug
+    std::fprintf(stderr,
+                 "DEBUG prefs: enter rc_path=%s loaded=%d cached=%s\n",
+                 (cfg && cfg->rc_path) ? cfg->rc_path : "(null)",
+                 g_analysis_prefs_loaded ? 1 : 0,
+                 g_loaded_analysis_rc_path.empty() ? "(empty)" : g_loaded_analysis_rc_path.c_str());
+//
     if (!cfg) {
         return MF_ERR_INVALID_ARG;
     }
@@ -229,6 +237,11 @@ static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
     }
 
     if (g_analysis_prefs_loaded && g_loaded_analysis_rc_path == cfg->rc_path) {
+// Debug
+        std::fprintf(stderr,
+                     "DEBUG prefs: cache hit rc_path=%s\n",
+                     cfg->rc_path);
+//
         return MF_OK;
     }
 
@@ -245,10 +258,16 @@ static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
         return MF_ERR_RC_LOAD;
     }
 
+// Debug
+    std::fprintf(stderr,
+                 "DEBUG prefs: loaded rc_path=%s\n",
+                 cfg->rc_path);
+//
     g_loaded_analysis_rc_path = cfg->rc_path;
     g_analysis_prefs_loaded = true;
     return MF_OK;
 }
+
 //###
 
     static mf_error_t mf_build_header_from_text(
@@ -700,11 +719,21 @@ mf_error_t mf_validate_schema(void) {
 }
 
 void mf_shutdown(void) {
+// Debug
+    std::fprintf(stderr,
+                 "DEBUG shutdown: initialized=%d loaded=%d cached=%s\n",
+                 g_initialized ? 1 : 0,
+                 g_analysis_prefs_loaded ? 1 : 0,
+                 g_loaded_analysis_rc_path.empty() ? "(empty)" : g_loaded_analysis_rc_path.c_str());
+// Ende Debug
     if (!g_initialized) return;
     mf_db_close_existing();
     Preferences::Instance().kill();
     g_loaded_analysis_rc_path.clear();
     g_analysis_prefs_loaded = false;
+// Debug    
+std::fprintf(stderr, "DEBUG shutdown: cache cleared\n");
+// Ende Debug
     std::memset(&g_cfg, 0, sizeof(g_cfg));
     g_initialized = false;
 }
