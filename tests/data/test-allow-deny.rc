@@ -1,12 +1,9 @@
-# minimal analysis rc for smoke test
-
+## minimal Test rc file
 REG_CASE="no"
 REG_TYPE="extended"
 MAXLENGTH=2998
 NORMAL="yes"
 HIGHSCORE=100
 
-
-ALLOW="^X-Test-Allow:"
-
-DENY="^X-Test-Deny:"
+ALLOW="^Subject:.*Artemis"
+DENY="^Subject:.*Comes"
