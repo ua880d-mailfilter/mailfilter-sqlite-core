@@ -168,10 +168,10 @@ namespace {
             return err;
         }
 // ---> Debug
-        std::fprintf(stderr,
-                 "DEBUG analyze_imported_header_block: import ok serial=%d msg_log_id=%s\n",
-                 serial,
-                 msg_log_id ? msg_log_id : "(null)");
+//        std::fprintf(stderr,
+//                 "DEBUG analyze_imported_header_block: import ok serial=%d msg_log_id=%s\n",
+//                 serial,
+//                 msg_log_id ? msg_log_id : "(null)");
 // <--- Debug
         Header *hdr = nullptr;
         err = mf_build_header_from_text(raw_headers, &hdr);
@@ -180,10 +180,10 @@ namespace {
             return err;
         }
 // ---> Debug
-        std::fprintf(stderr,
-                 "DEBUG analyze_imported_header_block: build_header ok serial=%d msg_log_id=%s\n",
-                 serial,
-                 msg_log_id ? msg_log_id : "(null)");
+//        std::fprintf(stderr,
+//                 "DEBUG analyze_imported_header_block: build_header ok serial=%d msg_log_id=%s\n",
+//                 serial,
+//                 msg_log_id ? msg_log_id : "(null)");
 // <--- Debug
         mf_result_t result{};
         Weeder weeder;
@@ -198,12 +198,12 @@ namespace {
             return err;
         }
 // ---> Debug
-        std::fprintf(stderr,
-                 "DEBUG analyze_imported_header_block: analyze ok serial=%d msg_log_id=%s decision=%s final_score=%d\n",
-                 serial,
-                 msg_log_id ? msg_log_id : "(null)",
-                 result.decision ? result.decision : "(null)",
-                 result.final_score);
+//        std::fprintf(stderr,
+//                 "DEBUG analyze_imported_header_block: analyze ok serial=%d msg_log_id=%s decision=%s final_score=%d\n",
+//                 serial,
+//                 msg_log_id ? msg_log_id : "(null)",
+//                 result.decision ? result.decision : "(null)",
+//                 result.final_score);
 // <--- Debug
         const char *decision = result.decision ? result.decision : "pass";
         const int final_score = result.final_score;
@@ -215,22 +215,22 @@ namespace {
             final_score
         );
 // ---> Debug
-        std::fprintf(stderr,
-                 "DEBUG analyze_imported_header_block: update_result rc=%d serial=%d msg_log_id=%s\n",
-                 (int)err,
-                 serial,
-                 msg_log_id ? msg_log_id : "(null)");
+//        std::fprintf(stderr,
+//                 "DEBUG analyze_imported_header_block: update_result rc=%d serial=%d msg_log_id=%s\n",
+//                 (int)err,
+//                 serial,
+//                 msg_log_id ? msg_log_id : "(null)");
 // <--- Debug
-/*
+
         if (err == MF_OK && options->fill_rule_hits) {
             mf_write_score_rule_hits(options, msg_log_id, weeder);
             mf_write_allow_rule_hits(options, msg_log_id, weeder);
             mf_write_deny_rule_hits(options, msg_log_id, weeder);
         }
-*/
+
 
 // ---> Debug
-    if (err == MF_OK && options->fill_rule_hits) {
+/*    if (err == MF_OK && options->fill_rule_hits) {
         std::fprintf(stderr,
                      "DEBUG analyze_imported_header_block: writing rule_hits serial=%d msg_log_id=%s score_hits=%zu allow_hits=%zu deny_hits=%zu\n",
                      serial,
@@ -247,7 +247,7 @@ namespace {
                      "DEBUG analyze_imported_header_block: rule_hits write done serial=%d msg_log_id=%s\n",
                      serial,
                      msg_log_id ? msg_log_id : "(null)");
-    }
+    } */
 // <--- Debug
 
         if (out_msg_log_id) {

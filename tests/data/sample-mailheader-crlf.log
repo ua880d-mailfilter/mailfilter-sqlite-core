@@ -1,0 +1,36 @@
++OK
+Return-path: <sender1@example.org>
+Delivery-date: Mon, 16 Mar 2026 17:29:07 +0100
+Received: from mx1.example.org
+        by mail.example.org with esmtps
+        id ABC123
+        for user@example.org;
+        Mon, 16 Mar 2026 17:29:07 +0100
+Message-ID: <msg1@example.org>
+Date: Mon, 16 Mar 2026 17:29:07 +0100
+From: "Example Sender 1" <sender1@example.org>
+To: <user@example.org>
+Subject: Test message one
+X-Test-Allow: yes
+
+.
+
++OK
+Return-path: <sender2@example.net>
+Received: from mx2.example.net
+        by mail.example.net with esmtps
+        id XYZ987
+        for user@example.net;
+        Tue, 17 Mar 2026 08:15:00 +0100
+DKIM-Signature: v=1; a=rsa-sha256; d=example.net;
+        s=testsel; t=1773678547;
+        h=Message-ID:Date:From:To:Subject;
+        b=abc123
+Message-ID: <msg2@example.net>
+Date: Tue, 17 Mar 2026 08:15:00 +0100
+From: "Example Sender 2" <sender2@example.net>
+To: <user@example.net>
+Subject: =?UTF-8?Q?Zweiter_Test?=
+X-Test-Deny: yes
+
+.

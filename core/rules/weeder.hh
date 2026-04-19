@@ -57,7 +57,6 @@ private:
   int check_deny_rules (Header*);
   int check_scores (Header*);
 
-
 public:
 
   Weeder () : last_score (0), last_decision ("pass") {}
