@@ -8,6 +8,7 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <vector>
 
 static int query_single_int(sqlite3 *db, const char *sql, int *out_value) {
     if (!db || !sql || !out_value) {
@@ -50,8 +51,75 @@ static int query_single_text(sqlite3 *db, const char *sql, std::string &out_valu
     return ok;
 }
 
-static int run_import_check(const char *input_file, const char *import_db, int analyze_after_import) {
+struct MessageRow {
+    std::string msg_log_id;
+    std::string decision;
+    int final_score;
+};
+
+static int query_message_rows(sqlite3 *db, std::vector<MessageRow> &rows) {
+    if (!db) {
+        return 0;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+    const char *sql =
+        "SELECT msg_log_id, decision, final_score "
+        "FROM messages ORDER BY msg_log_id;";
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return 0;
+    }
+
+    rows.clear();
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        MessageRow row;
+        const unsigned char *msg_log_id = sqlite3_column_text(stmt, 0);
+        const unsigned char *decision = sqlite3_column_text(stmt, 1);
+
+        row.msg_log_id = msg_log_id ? reinterpret_cast<const char *>(msg_log_id) : "";
+        row.decision = decision ? reinterpret_cast<const char *>(decision) : "";
+        row.final_score = sqlite3_column_int(stmt, 2);
+
+        rows.push_back(row);
+    }
+
+    sqlite3_finalize(stmt);
+    return 1;
+}
+
+static int run_import_check(
+    const char *scenario_name,
+    const char *input_file,
+    const char *import_db,
+    int analyze_after_import,
+    const char *rc_path
+) {
+    const char *runtime_db = "build/test-runtime.sqlite3";
+
+    std::remove(runtime_db);
     std::remove(import_db);
+
+    mf_shutdown();
+
+    mf_config_t cfg{};
+    cfg.db_path = runtime_db;
+    cfg.rc_path = rc_path;
+    cfg.policy_dir = ".";
+    cfg.enable_sqlite_logging = 1;
+    cfg.enable_rule_hits = 0;
+    cfg.enable_explanations = 0;
+    cfg.create_additive_tables = 0;
+    cfg.app_id = "smoke-test";
+    cfg.device_id = "ci";
+
+    mf_error_t init_err = mf_init(&cfg);
+    if (init_err != MF_OK) {
+        std::cerr << "mf_init failed for scenario " << scenario_name
+                  << " rc_path=" << rc_path
+                  << ": " << mf_error_string(init_err) << "\n";
+        return 2;
+    }
 
     mf_import_options_t opts{};
     opts.target_db_path = import_db;
@@ -118,78 +186,125 @@ static int run_import_check(const char *input_file, const char *import_db, int a
     }
 
     if (analyze_after_import) {
-        std::string decision;
-        if (!query_single_text(
-                db,
-                "SELECT decision FROM messages ORDER BY msg_log_id LIMIT 1;",
-                decision
-            )) {
-            std::cerr << "failed to query decision for " << input_file << "\n";
+        std::vector<MessageRow> rows;
+        if (!query_message_rows(db, rows)) {
+            std::cerr << "failed to query message rows for " << input_file << "\n";
             sqlite3_close(db);
             return 17;
         }
 
-        if (decision.empty()) {
-            std::cerr << "empty decision for " << input_file << "\n";
+        if (rows.size() != 2) {
+            std::cerr << "expected 2 message rows but got " << rows.size()
+                      << " for " << input_file << "\n";
             sqlite3_close(db);
             return 18;
         }
 
-        if (decision != "pass" &&
-            decision != "deny" &&
-            decision != "score-deny" &&
-            decision != "deny-maxlength" &&
-            decision != "allow" &&
-            decision != "duplicate" &&
-            decision != "deny-after-allow") {
-            std::cerr << "unexpected decision='" << decision
-                      << "' for " << input_file << "\n";
+        int rule_hits_count = 0;
+        if (!query_single_int(db, "SELECT COUNT(*) FROM rule_hits;", &rule_hits_count)) {
+            std::cerr << "failed to query rule_hits count for " << input_file << "\n";
             sqlite3_close(db);
             return 19;
         }
 
-        int final_score = 0;
-        if (!query_single_int(
-                db,
-                "SELECT final_score FROM messages ORDER BY msg_log_id LIMIT 1;",
-                &final_score
-            )) {
-            std::cerr << "failed to query final_score for " << input_file << "\n";
+        int score_hits_count = 0;
+        if (!query_single_int(db, "SELECT COUNT(*) FROM rule_hits WHERE phase='score';", &score_hits_count)) {
+            std::cerr << "failed to query score rule_hits count for " << input_file << "\n";
             sqlite3_close(db);
             return 20;
         }
 
-        int rule_hits_count = 0;
-        if (!query_single_int(
-                db,
-                "SELECT COUNT(*) FROM rule_hits;",
-                &rule_hits_count
-            )) {
-            std::cerr << "failed to query rule_hits count for " << input_file << "\n";
+        int allow_hits_count = 0;
+        if (!query_single_int(db, "SELECT COUNT(*) FROM rule_hits WHERE phase='allow';", &allow_hits_count)) {
+            std::cerr << "failed to query allow rule_hits count for " << input_file << "\n";
             sqlite3_close(db);
             return 21;
         }
 
-// Test new
-        if (rule_hits_count <= 0) {
-            std::cerr << "expected rule_hits > 0 but got " << rule_hits_count
-                      << " for " << input_file << "\n";
+        int deny_hits_count = 0;
+        if (!query_single_int(db, "SELECT COUNT(*) FROM rule_hits WHERE phase='deny';", &deny_hits_count)) {
+            std::cerr << "failed to query deny rule_hits count for " << input_file << "\n";
             sqlite3_close(db);
             return 22;
         }
-// Ende Test
 
-        std::cout << "ANALYZE file=" << input_file
-                  << " decision=" << decision
-                  << " final_score=" << final_score
+        const bool is_score_rc = (std::string(rc_path) == "tests/data/test-score.rc");
+        const bool is_allowdeny_rc = (std::string(rc_path) == "tests/data/test-allow-deny.rc");
+
+        if (is_score_rc) {
+            if (rows[0].decision != "pass" || rows[1].decision != "pass") {
+                std::cerr << "expected pass/pass for score scenario but got '"
+                          << rows[0].decision << "'/ '" << rows[1].decision
+                          << "' for " << input_file << "\n";
+                sqlite3_close(db);
+                return 30;
+            }
+
+            if (rows[0].final_score != 50 || rows[1].final_score != 50) {
+                std::cerr << "expected final_score=50/50 for score scenario but got "
+                          << rows[0].final_score << "/" << rows[1].final_score
+                          << " for " << input_file << "\n";
+                sqlite3_close(db);
+                return 31;
+            }
+
+            if (score_hits_count < 6) {
+                std::cerr << "expected at least 6 score rule_hits but got "
+                          << score_hits_count << " for " << input_file << "\n";
+                sqlite3_close(db);
+                return 32;
+            }
+
+            if (allow_hits_count != 0 || deny_hits_count != 0) {
+                std::cerr << "expected allow_hits=0 and deny_hits=0 for score scenario but got "
+                          << allow_hits_count << "/" << deny_hits_count
+                          << " for " << input_file << "\n";
+                sqlite3_close(db);
+                return 33;
+            }
+        }
+
+        if (is_allowdeny_rc) {
+            if (rows[0].decision != "allow" || rows[1].decision != "deny") {
+                std::cerr << "expected allow/deny for allow-deny scenario but got '"
+                          << rows[0].decision << "'/ '" << rows[1].decision
+                          << "' for " << input_file << "\n";
+                sqlite3_close(db);
+                return 34;
+            }
+
+            if (rows[0].final_score != 0 || rows[1].final_score != 0) {
+                std::cerr << "expected final_score=0/0 for allow-deny scenario but got "
+                          << rows[0].final_score << "/" << rows[1].final_score
+                          << " for " << input_file << "\n";
+                sqlite3_close(db);
+                return 35;
+            }
+
+            if (allow_hits_count < 1 || deny_hits_count < 1) {
+                std::cerr << "expected at least 1 allow and 1 deny rule_hit but got "
+                          << allow_hits_count << "/" << deny_hits_count
+                          << " for " << input_file << "\n";
+                sqlite3_close(db);
+                return 36;
+            }
+        }
+
+        std::cout << "ANALYZE scenario=" << scenario_name
+                  << " file=" << input_file
+                  << " msg1=" << rows[0].msg_log_id << ":" << rows[0].decision << ":" << rows[0].final_score
+                  << " msg2=" << rows[1].msg_log_id << ":" << rows[1].decision << ":" << rows[1].final_score
                   << " rule_hits=" << rule_hits_count
+                  << " score_hits=" << score_hits_count
+                  << " allow_hits=" << allow_hits_count
+                  << " deny_hits=" << deny_hits_count
                   << "\n";
-
-    } // Ende if analyze
+    }
 
     sqlite3_close(db);
 
-    std::cout << "OK file=" << input_file
+    std::cout << "OK scenario=" << scenario_name
+              << " file=" << input_file
               << " imported_count=" << imported_count
               << " messages=" << messages_count
               << " header_entries=" << header_entries_count
@@ -200,30 +315,12 @@ static int run_import_check(const char *input_file, const char *import_db, int a
 }
 
 int main() {
-    const char *runtime_db = "build/test-runtime.sqlite3";
-
-    std::remove(runtime_db);
-
-    mf_config_t cfg{};
-    cfg.db_path = runtime_db;
-    cfg.rc_path = "tests/data/test-analysis.rc";
-    cfg.policy_dir = ".";
-    cfg.enable_sqlite_logging = 1;
-    cfg.enable_rule_hits = 0;
-    cfg.enable_explanations = 0;
-    cfg.create_additive_tables = 0;
-    cfg.app_id = "smoke-test";
-    cfg.device_id = "ci";
-
-    mf_error_t err = mf_init(&cfg);
-    if (err != MF_OK) {
-        std::cerr << "mf_init failed: " << mf_error_string(err) << "\n";
-        return 1;
-    }
-
     int rc = run_import_check(
+        "score-lf",
         "tests/data/sample-mailheader.log",
-        "build/test-import-lf.sqlite3",1
+        "build/test-import-score-lf.sqlite3",
+        1,
+        "tests/data/test-score.rc"
     );
     if (rc != 0) {
         mf_shutdown();
@@ -231,8 +328,23 @@ int main() {
     }
 
     rc = run_import_check(
+        "allowdeny-lf",
+        "tests/data/sample-mailheader.log",
+        "build/test-import-allowdeny-lf.sqlite3",
+        1,
+        "tests/data/test-allow-deny.rc"
+    );
+    if (rc != 0) {
+        mf_shutdown();
+        return rc;
+    }
+
+    rc = run_import_check(
+        "score-crlf",
         "build/sample-mailheader-crlf.log",
-        "build/test-import-crlf.sqlite3",1
+        "build/test-import-score-crlf.sqlite3",
+        1,
+        "tests/data/test-score.rc"
     );
     if (rc != 0) {
         mf_shutdown();

@@ -1,0 +1,12 @@
+# minimal analysis rc for smoke test
+
+REG_CASE="no"
+REG_TYPE="extended"
+MAXLENGTH=2998
+NORMAL="yes"
+HIGHSCORE=100
+
+
+ALLOW="^X-Test-Allow:"
+
+DENY="^X-Test-Deny:"
