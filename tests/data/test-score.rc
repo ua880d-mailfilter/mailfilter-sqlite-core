@@ -9,3 +9,6 @@ HIGHSCORE=100
 SCORE -1="^From:"
 SCORE +1="^To:"
 SCORE +50="^Received:"
+
+#ALLOW="^Subject:.*Artemis"
+#DENY="^Subject:.*Comes"

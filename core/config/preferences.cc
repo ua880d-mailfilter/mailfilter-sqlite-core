@@ -127,7 +127,7 @@ bool Preferences :: open (const char* name)
 // This function loads the user's preferences file which is specified
 // in prefs_file.  This string, containing the path, must not be empty
 // at this point.
-
+/*
 bool Preferences :: load (void)
 {
   if (!prefs_stream.is_open ())
@@ -165,6 +165,66 @@ bool Preferences :: load (void)
 
   return true;
 }
+*/
+
+
+// Anfang mit Debug
+
+bool Preferences :: load (void)
+{
+  if (!prefs_stream.is_open ())
+    return false;
+
+  try
+    {
+      RCParser rcparser(&prefs_stream);
+      int parse_rc = rcparser.parse();
+
+      std::fprintf(stderr,
+                   "DEBUG prefs: parse rc=%d allows=%zu denies=%zu scores=%zu\n",
+                   parse_rc,
+                   allows.size(),
+                   denies.size(),
+                   scores.size());
+
+      if (parse_rc != 0)
+        {
+          ERROR_MSG("RC parser returned non-zero status.");
+          return false;
+        }
+    }
+  catch (...) { throw; }
+
+  for (auto &f : allows)
+    {
+      if (f.compile () != 0)
+        {
+          ERROR_MSG("Failed to compile allow rule regex: `" + f.expression () + "'.");
+          return false;
+        }
+    }
+
+  for (auto &f : denies)
+    {
+      if (f.compile () != 0)
+        {
+          ERROR_MSG("Failed to compile deny rule regex: `" + f.expression () + "'.");
+          return false;
+        }
+    }
+
+  for (auto &s : scores)
+    {
+      if (s.compile () != 0)
+        {
+          ERROR_MSG("Failed to compile score rule regex: `" + s.expression () + "'.");
+          return false;
+        }
+    }
+
+  return true;
+}
+// Ende inkl. Debug
 
 void Preferences :: add_deny_rule (const char* keyword,
 				   const char* operat,
