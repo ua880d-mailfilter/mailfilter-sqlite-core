@@ -178,7 +178,7 @@ bool Preferences :: load (void)
   try
     {
       RCParser rcparser(&prefs_stream);
-      int parse_rc = rcparser.parse();
+      rcparser.parse();
 
       std::fprintf(stderr,
                    "DEBUG prefs: parse rc=%d allows=%zu denies=%zu scores=%zu\n",
