@@ -21,6 +21,35 @@ namespace {
 
     static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg);
 
+    static mf_error_t mf_build_header_from_text(
+        const char *raw_headers,
+        Header **out_header
+    );
+
+    static mf_error_t mf_analyze_header_object(
+        Header *hdr,
+        Weeder &weeder,
+        mf_result_t *out_result
+    );
+
+    static void mf_write_score_rule_hits(
+        const mf_import_options_t *options,
+        const char *msg_log_id,
+        const Weeder &weeder
+    );
+
+    static void mf_write_allow_rule_hits(
+        const mf_import_options_t *options,
+        const char *msg_log_id,
+        const Weeder &weeder
+    );
+
+    static void mf_write_deny_rule_hits(
+        const mf_import_options_t *options,
+        const char *msg_log_id,
+        const Weeder &weeder
+    );
+
     static char *mf_strdup_safe(const char *s) {
         if (!s) return nullptr;
         const size_t n = std::strlen(s) + 1;
@@ -30,131 +59,86 @@ namespace {
         return p;
     }
 
-
-    static mf_error_t mf_build_header_from_text(
-        const char *raw_headers,
-        Header **out_header
-   );
-
-    static mf_error_t mf_analyze_header_object(
-       Header *hdr,
-       Weeder &weeder,
-       mf_result_t *out_result
-    );
-
-
-/*    static void mf_write_minimal_score_rule_hit(
+    static void mf_write_score_rule_hits(
         const mf_import_options_t *options,
         const char *msg_log_id,
-        int final_score
-    );
-*/
+        const Weeder &weeder
+    )
+    {
+        if (!options || !options->target_db_path || !msg_log_id) {
+            return;
+        }
 
-static void mf_write_allow_rule_hits(
-    const mf_import_options_t *options,
-    const char *msg_log_id,
-    const Weeder &weeder
-);
-
-static void mf_write_deny_rule_hits(
-    const mf_import_options_t *options,
-    const char *msg_log_id,
-    const Weeder &weeder
-);
-
-//Beginn Helper Score-Rule-Hits
-
-static void mf_write_score_rule_hits(
-    const mf_import_options_t *options,
-    const char *msg_log_id,
-    const Weeder &weeder
-)
-{
-    if (!options || !options->target_db_path || !msg_log_id) {
-        return;
+        const auto &hits = weeder.score_hits();
+        for (const auto &hit : hits) {
+            (void)mf_insert_rule_hit(
+                options->target_db_path,
+                msg_log_id,
+                "score",
+                hit.expression.c_str(),
+                hit.is_negative,
+                hit.matched,
+                hit.header_tag.c_str(),
+                hit.header_body.c_str(),
+                hit.normalized_subject,
+                hit.score_delta
+            );
+        }
     }
 
-    const auto &hits = weeder.score_hits();
-    for (const auto &hit : hits) {
-        (void)mf_insert_rule_hit(
-            options->target_db_path,
-            msg_log_id,
-            "score",
-            hit.expression.c_str(),
-            hit.is_negative,
-            hit.matched,
-            hit.header_tag.c_str(),
-            hit.header_body.c_str(),
-            hit.normalized_subject,
-            hit.score_delta
-        );
-    }
-}
-//# Ende NEW
+    static void mf_write_allow_rule_hits(
+        const mf_import_options_t *options,
+        const char *msg_log_id,
+        const Weeder &weeder
+    )
+    {
+        if (!options || !options->target_db_path || !msg_log_id) {
+            return;
+        }
 
-// Beginn Helper Allow-Hits
-
-static void mf_write_allow_rule_hits(
-    const mf_import_options_t *options,
-    const char *msg_log_id,
-    const Weeder &weeder
-)
-{
-    if (!options || !options->target_db_path || !msg_log_id) {
-        return;
+        const auto &hits = weeder.allow_hits();
+        for (const auto &hit : hits) {
+            (void)mf_insert_rule_hit(
+                options->target_db_path,
+                msg_log_id,
+                "allow",
+                hit.expression.c_str(),
+                hit.is_negative,
+                hit.matched,
+                hit.header_tag.c_str(),
+                hit.header_body.c_str(),
+                hit.normalized_subject,
+                0
+            );
+        }
     }
 
-    const auto &hits = weeder.allow_hits();
-    for (const auto &hit : hits) {
-        (void)mf_insert_rule_hit(
-            options->target_db_path,
-            msg_log_id,
-            "allow",
-            hit.expression.c_str(),
-            hit.is_negative,
-            hit.matched,
-            hit.header_tag.c_str(),
-            hit.header_body.c_str(),
-            hit.normalized_subject,
-            0
-        );
+    static void mf_write_deny_rule_hits(
+        const mf_import_options_t *options,
+        const char *msg_log_id,
+        const Weeder &weeder
+    )
+    {
+        if (!options || !options->target_db_path || !msg_log_id) {
+            return;
+        }
+
+        const auto &hits = weeder.deny_hits();
+        for (const auto &hit : hits) {
+            (void)mf_insert_rule_hit(
+                options->target_db_path,
+                msg_log_id,
+                "deny",
+                hit.expression.c_str(),
+                hit.is_negative,
+                hit.matched,
+                hit.header_tag.c_str(),
+                hit.header_body.c_str(),
+                hit.normalized_subject,
+                0
+            );
+        }
     }
-}
-
-// Ende Helper Allow-Hits
-
-
-// Beginn Helper Deny-Hits
-
-static void mf_write_deny_rule_hits(
-    const mf_import_options_t *options,
-    const char *msg_log_id,
-    const Weeder &weeder
-)
-{
-    if (!options || !options->target_db_path || !msg_log_id) {
-        return;
-    }
-
-    const auto &hits = weeder.deny_hits();
-    for (const auto &hit : hits) {
-        (void)mf_insert_rule_hit(
-            options->target_db_path,
-            msg_log_id,
-            "deny",
-            hit.expression.c_str(),
-            hit.is_negative,
-            hit.matched,
-            hit.header_tag.c_str(),
-            hit.header_body.c_str(),
-            hit.normalized_subject,
-            0
-        );
-    }
-}
-
-// Ende Helper Deny-Hits
-
 
     static mf_error_t mf_analyze_imported_header_block(
         const char *raw_headers,
@@ -229,43 +213,40 @@ static void mf_write_deny_rule_hits(
         return err;
     }
 
-//### 0:38 fix
-static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
-{
-    static std::string loaded_rc_path;
-    static bool loaded_ok = false;
+    static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
+    {
+        static std::string loaded_rc_path;
+        static bool loaded_ok = false;
 
-    if (!cfg) {
-        return MF_ERR_INVALID_ARG;
-    }
+        if (!cfg) {
+            return MF_ERR_INVALID_ARG;
+        }
 
-    if (!cfg->rc_path || !*cfg->rc_path) {
-        return MF_ERR_RC_LOAD;
-    }
+        if (!cfg->rc_path || !*cfg->rc_path) {
+            return MF_ERR_RC_LOAD;
+        }
 
-    if (loaded_ok && loaded_rc_path == cfg->rc_path) {
+        if (loaded_ok && loaded_rc_path == cfg->rc_path) {
+            return MF_OK;
+        }
+
+        Preferences &prefs = Preferences::Instance();
+
+        prefs.kill();
+        prefs.set_rc_file(cfg->rc_path);
+
+        if (!prefs.open(cfg->rc_path)) {
+            return MF_ERR_RC_LOAD;
+        }
+
+        if (!prefs.load()) {
+            return MF_ERR_RC_LOAD;
+        }
+
+        loaded_rc_path = cfg->rc_path;
+        loaded_ok = true;
         return MF_OK;
     }
-
-    Preferences &prefs = Preferences::Instance();
-
-    prefs.kill();
-
-    prefs.set_rc_file(cfg->rc_path);
-
-    if (!prefs.open(cfg->rc_path)) {
-        return MF_ERR_RC_LOAD;
-    }
-
-    if (!prefs.load()) {
-        return MF_ERR_RC_LOAD;
-    }
-
-    loaded_rc_path = cfg->rc_path;
-    loaded_ok = true;
-    return MF_OK;
-}
-//###
 
     static mf_error_t mf_build_header_from_text(
         const char *raw_headers,
@@ -304,7 +285,7 @@ static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
         *out_header = hdr;
         return MF_OK;
     }
-// start
+
     static mf_error_t mf_analyze_header_object(
         Header *hdr,
         Weeder &weeder,
@@ -329,38 +310,8 @@ static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
 
         return MF_OK;
     }
-    
-/* Testweise raus
-static void mf_write_minimal_score_rule_hit(
-    const mf_import_options_t *options,
-    const char *msg_log_id,
-    int final_score
-)
-{
-    if (!options || !options->target_db_path || !msg_log_id) {
-        return;
-    }
 
-    if (final_score == 0) {
-        return;
-    }
-
-    (void)mf_insert_rule_hit(
-        options->target_db_path,
-        msg_log_id,
-        "score",
-        "aggregate-score",
-        0,
-        1,
-        "",
-        "",
-        0,
-        final_score
-    );
-}
-*/
-
-} // Ende Namespace
+} // namespace
 
 const char *mf_error_string(mf_error_t err) {
     switch (err) {
@@ -604,27 +555,27 @@ mf_error_t mf_import_header_file_with_options(
             return err;
         }
 
-    if (!options->dry_run) {
-        char *msg_log_id = nullptr;
+        if (!options->dry_run) {
+            char *msg_log_id = nullptr;
 
-        if (options->analyze_after_import) {
-            err = mf_analyze_imported_header_block(
-                raw_headers,
-                options,
-                imported + 1,
-                &msg_log_id
-            );
-        } else {
-            err = mf_import_header_text_to_db(
-                raw_headers,
-                options,
-                imported + 1,
-                &msg_log_id
-            );
+            if (options->analyze_after_import) {
+                err = mf_analyze_imported_header_block(
+                    raw_headers,
+                    options,
+                    imported + 1,
+                    &msg_log_id
+                );
+            } else {
+                err = mf_import_header_text_to_db(
+                    raw_headers,
+                    options,
+                    imported + 1,
+                    &msg_log_id
+                );
+            }
+
+            std::free(msg_log_id);
         }
-
-        std::free(msg_log_id);
-    }
 
         std::free(raw_headers);
 
