@@ -184,7 +184,7 @@ int Weeder :: check_duplicates (Header* the_header)
 // This function returns 1 if the message was considered being spam, 0
 // if it is a friend.  A negative integer is returned upon error.
 
-int Weeder :: check_allow_rules (Header* the_header) const
+int Weeder :: check_allow_rules (Header* the_header)
 {
   Feedback* logger = Feedback :: Instance ();
 
@@ -410,7 +410,7 @@ int Weeder :: check_maxlength (Header* the_header) const
 // This function returns 1 if the message was considered being spam, 0
 // otherwise.  A negative integer is returned upon error.
 
-int Weeder :: check_deny_rules (Header* the_header) const
+int Weeder :: check_deny_rules (Header* the_header)
 {
   Feedback* logger = Feedback :: Instance ();
 
