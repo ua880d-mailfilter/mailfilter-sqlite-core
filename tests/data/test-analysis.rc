@@ -10,5 +10,7 @@ SCORE -1="^From:"
 SCORE +1="^To:"
 SCORE +50="^Received:"
 
-#ALLOW="^X-Test-Allow:"
 DENY="^X-Test-Deny:"
+ALLOW="^X-Test-Allow:"
+
+#DENY="^X-Test-Deny:"
