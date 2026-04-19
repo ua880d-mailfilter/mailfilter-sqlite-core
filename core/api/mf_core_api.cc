@@ -19,6 +19,8 @@ std::string mf_build_result_json(const char *decision, int final_score, const ch
 namespace {
     static bool g_initialized = false;
     static mf_config_t g_cfg{};
+    static std::string g_loaded_analysis_rc_path;
+    static bool g_analysis_prefs_loaded = false;
 
     static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg);
 
@@ -264,9 +266,6 @@ namespace {
 
     static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
     {
-        static std::string loaded_rc_path;
-        static bool loaded_ok = false;
-
         if (!cfg) {
             return MF_ERR_INVALID_ARG;
         }
@@ -275,7 +274,7 @@ namespace {
             return MF_ERR_RC_LOAD;
         }
 
-        if (loaded_ok && loaded_rc_path == cfg->rc_path) {
+        if (g_analysis_prefs_loaded && g_loaded_analysis_rc_path == cfg->rc_path) {
             return MF_OK;
         }
 
@@ -292,8 +291,8 @@ namespace {
             return MF_ERR_RC_LOAD;
         }
 
-        loaded_rc_path = cfg->rc_path;
-        loaded_ok = true;
+        g_loaded_analysis_rc_path = cfg->rc_path;
+        g_analysis_prefs_loaded = true;
         return MF_OK;
     }
 
@@ -774,6 +773,9 @@ mf_error_t mf_validate_schema(void) {
 void mf_shutdown(void) {
     if (!g_initialized) return;
     mf_db_close_existing();
+    Preferences::Instance().kill();
+    g_loaded_analysis_rc_path.clear();
+    g_analysis_prefs_loaded = false;
     std::memset(&g_cfg, 0, sizeof(g_cfg));
     g_initialized = false;
 }
