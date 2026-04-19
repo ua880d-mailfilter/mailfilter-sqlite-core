@@ -21,6 +21,26 @@ public:
       std::string header_body;
       int normalized_subject;
     };
+
+  struct AllowHit
+  {
+    std::string expression;
+    int matched;
+    int is_negative;
+    std::string header_tag;
+    std::string header_body;
+    int normalized_subject;
+  };
+
+  struct DenyHit
+  {
+    std::string expression;
+    int matched;
+    int is_negative;
+    std::string header_tag;
+    std::string header_body;
+    int normalized_subject;
+  };
   
 private:
   vector<string> msg_ids;
@@ -28,6 +48,8 @@ private:
   int last_score;
   string last_decision;
   std::vector<ScoreHit> last_score_hits; 
+  std::vector<AllowHit> last_allow_hits;
+  std::vector<DenyHit> last_deny_hits;
 
   int check_duplicates (Header*);
   int check_maxlength (Header*) const;
@@ -45,6 +67,7 @@ public:
   int final_score (void) const { return last_score; }
   const string& decision (void) const { return last_decision; }
   const std::vector<ScoreHit>& score_hits (void) const { return last_score_hits; }
-
+  const std::vector<AllowHit>& allow_hits (void) const { return last_allow_hits; }
+  const std::vector<DenyHit>& deny_hits (void) const { return last_deny_hits; }
 };
 #endif

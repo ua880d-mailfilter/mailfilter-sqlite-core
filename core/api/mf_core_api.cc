@@ -49,7 +49,20 @@ namespace {
         int final_score
     );
 */
-//##NEW
+
+static void mf_write_allow_rule_hits(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    const Weeder &weeder
+);
+
+static void mf_write_deny_rule_hits(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    const Weeder &weeder
+);
+
+//Beginn Helper Score-Rule-Hits
 
 static void mf_write_score_rule_hits(
     const mf_import_options_t *options,
@@ -78,6 +91,70 @@ static void mf_write_score_rule_hits(
     }
 }
 //# Ende NEW
+
+// Beginn Helper Allow-Hits
+
+static void mf_write_allow_rule_hits(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    const Weeder &weeder
+)
+{
+    if (!options || !options->target_db_path || !msg_log_id) {
+        return;
+    }
+
+    const auto &hits = weeder.allow_hits();
+    for (const auto &hit : hits) {
+        (void)mf_insert_rule_hit(
+            options->target_db_path,
+            msg_log_id,
+            "allow",
+            hit.expression.c_str(),
+            hit.is_negative,
+            hit.matched,
+            hit.header_tag.c_str(),
+            hit.header_body.c_str(),
+            hit.normalized_subject,
+            0
+        );
+    }
+}
+
+// Ende Helper Allow-Hits
+
+
+// Beginn Helper Deny-Hits
+
+static void mf_write_deny_rule_hits(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    const Weeder &weeder
+)
+{
+    if (!options || !options->target_db_path || !msg_log_id) {
+        return;
+    }
+
+    const auto &hits = weeder.deny_hits();
+    for (const auto &hit : hits) {
+        (void)mf_insert_rule_hit(
+            options->target_db_path,
+            msg_log_id,
+            "deny",
+            hit.expression.c_str(),
+            hit.is_negative,
+            hit.matched,
+            hit.header_tag.c_str(),
+            hit.header_body.c_str(),
+            hit.normalized_subject,
+            0
+        );
+    }
+}
+
+// Ende Helper Deny-Hits
+
 
     static mf_error_t mf_analyze_imported_header_block(
         const char *raw_headers,
@@ -138,6 +215,8 @@ static void mf_write_score_rule_hits(
 
         if (err == MF_OK && options->fill_rule_hits) {
             mf_write_score_rule_hits(options, msg_log_id, weeder);
+            mf_write_allow_rule_hits(options, msg_log_id, weeder);
+            mf_write_deny_rule_hits(options, msg_log_id, weeder);
         }
 
         if (out_msg_log_id) {

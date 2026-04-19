@@ -1,5 +1,5 @@
 // weeder.cc - source file for the mailfilter program
-// Copyright (c) 2003 - 2009  Andreas Bauer <baueran@gmail.com>
+// Copyright (c) 2003 - 2009  Andreas Bauer <baueran@gmail.com>, (c) 2026 Rico Dummis <ua880d@gmail.com>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,6 +44,8 @@ int Weeder :: is_weed (Header* the_header)
   last_score = 0;
   last_decision = "pass";
   last_score_hits.clear ();
+  last_allow_hits.clear ();
+  last_deny_hits.clear ();
 
   status = check_duplicates (the_header);
   if (status == 1)
@@ -218,6 +220,16 @@ int Weeder :: check_allow_rules (Header* the_header) const
 				 + "\" matches \""
 				 + cur_line + "\"].",
 				 4);
+		// Hier Allow einfügen
+		   AllowHit hit;
+                   hit.expression = cur_allow->expression ();
+                   hit.matched = 1;
+                   hit.is_negative = 0;
+                   hit.header_tag = cur_entry->tag;
+                   hit.header_body = cur_entry->body;
+                   hit.normalized_subject = 0;
+                   last_allow_hits.push_back (hit);
+		// Ende Allow
 	      #ifdef USE_SQLITE3_HEADERLOG
 	      if (Preferences :: Instance ().use_headers_sqlite3 ()
 	          && Dblog :: Instance ().ready ())
@@ -244,6 +256,16 @@ int Weeder :: check_allow_rules (Header* the_header) const
 				     + *(the_header->date ())
 				     + " [Maxsize_Allow exceeded].",
 				     2);
+                  // hier Allow (MAXSIZE)
+                     AllowHit hit;
+                     hit.expression = "maxsize_allow";
+                     hit.matched = 1;
+                     hit.is_negative = 0;
+                     hit.header_tag = "";
+                     hit.header_body = "";
+                     hit.normalized_subject = 0;
+                     last_allow_hits.push_back (hit);
+                  // Ende Allow (MAXSIZE)
 		#ifdef USE_SQLITE3_HEADERLOG
 		  if (Preferences :: Instance ().use_headers_sqlite3 ()
 		      && Dblog :: Instance ().ready ())
@@ -303,6 +325,16 @@ int Weeder :: check_allow_rules (Header* the_header) const
 					 + cur_allow->expression ()
 					 + "\" did not match].",
 					 4);
+		       // Hier negative allow einfügen
+			 AllowHit hit;
+                         hit.expression = cur_allow->expression ();
+                         hit.matched = 0;
+                         hit.is_negative = 1;
+                         hit.header_tag = "";
+                         hit.header_body = "";
+                         hit.normalized_subject = 0;
+                         last_allow_hits.push_back (hit);
+		       // Ende negative allow 
 			#ifdef USE_SQLITE3_HEADERLOG
 		      	if (Preferences :: Instance ().use_headers_sqlite3 ()
 		          && Dblog :: Instance ().ready ())
@@ -396,6 +428,16 @@ int Weeder :: check_deny_rules (Header* the_header) const
 			 + *(the_header->date ())
 			 + " [Maxsize_Deny exceeded].",
 			 2);
+        // Hier DENY (MAXSIZE)
+          DenyHit hit;
+          hit.expression = "maxsize_deny";
+          hit.matched = 1;
+          hit.is_negative = 0;
+          hit.header_tag = "";
+          hit.header_body = "";
+          hit.normalized_subject = 0;
+          last_deny_hits.push_back (hit);
+        // Ende DENY (MAXSIZE)
 	#ifdef USE_SQLITE3_HEADERLOG
       	if (Preferences :: Instance ().use_headers_sqlite3 ()
           && Dblog :: Instance ().ready ())
@@ -440,6 +482,16 @@ int Weeder :: check_deny_rules (Header* the_header) const
 				+ "\" matches \""
 				+ cur_line + "\"].",
 				2);
+		// Hier Deny einfügen
+		  DenyHit hit;
+                  hit.expression = cur_deny->expression ();
+                  hit.matched = 1;
+                  hit.is_negative = 0;
+                  hit.header_tag = cur_entry->tag;
+                  hit.header_body = cur_entry->body;
+                  hit.normalized_subject = 0;
+                  last_deny_hits.push_back (hit);
+		// Ende Deny
 		#ifdef USE_SQLITE3_HEADERLOG
 	      	if (Preferences :: Instance ().use_headers_sqlite3 ()
 	          && Dblog :: Instance ().ready ())
@@ -477,6 +529,16 @@ int Weeder :: check_deny_rules (Header* the_header) const
 				 + cur_line 
 				 + "\" (normalised)].",
 				 2);
+		// Beginn Deny (norm Subject)
+	          DenyHit hit;
+                  hit.expression = cur_deny->expression ();
+                  hit.matched = 1;
+                  hit.is_negative = 0;
+                  hit.header_tag = cur_entry->tag;
+                  hit.header_body = cur_entry->body;
+                  hit.normalized_subject = 1;
+                  last_deny_hits.push_back (hit);
+		// Ende Deny
 		#ifdef USE_SQLITE3_HEADERLOG
 	      	if (Preferences :: Instance ().use_headers_sqlite3 ()
 	          && Dblog :: Instance ().ready ())
@@ -541,6 +603,16 @@ int Weeder :: check_deny_rules (Header* the_header) const
 					 + cur_deny->expression ()
 					 + "\" did not match].",
 					 4);
+			// Hier Deny einfügen (negative)
+			  DenyHit hit;
+                          hit.expression = cur_deny->expression ();
+                          hit.matched = 0;
+                          hit.is_negative = 1;
+                          hit.header_tag = "";
+                          hit.header_body = "";
+                          hit.normalized_subject = 0;
+                          last_deny_hits.push_back (hit);
+			// Ende Deny
 			#ifdef USE_SQLITE3_HEADERLOG
 		      	if (Preferences :: Instance ().use_headers_sqlite3 ()
 		          && Dblog :: Instance ().ready ())
