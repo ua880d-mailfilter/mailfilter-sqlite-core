@@ -53,8 +53,8 @@ private:
 
   int check_duplicates (Header*);
   int check_maxlength (Header*) const;
-  int check_allow_rules (Header*) const;
-  int check_deny_rules (Header*) const;
+  int check_allow_rules (Header*);
+  int check_deny_rules (Header*);
   int check_scores (Header*);
 
 
