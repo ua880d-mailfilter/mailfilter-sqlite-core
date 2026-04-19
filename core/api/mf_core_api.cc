@@ -7,7 +7,6 @@
 #include "mf_header_parse_utils.h"
 #include "weeder.hh"
 
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -24,35 +23,6 @@ namespace {
 
     static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg);
 
-    static mf_error_t mf_build_header_from_text(
-        const char *raw_headers,
-        Header **out_header
-    );
-
-    static mf_error_t mf_analyze_header_object(
-        Header *hdr,
-        Weeder &weeder,
-        mf_result_t *out_result
-    );
-
-    static void mf_write_score_rule_hits(
-        const mf_import_options_t *options,
-        const char *msg_log_id,
-        const Weeder &weeder
-    );
-
-    static void mf_write_allow_rule_hits(
-        const mf_import_options_t *options,
-        const char *msg_log_id,
-        const Weeder &weeder
-    );
-
-    static void mf_write_deny_rule_hits(
-        const mf_import_options_t *options,
-        const char *msg_log_id,
-        const Weeder &weeder
-    );
-
     static char *mf_strdup_safe(const char *s) {
         if (!s) return nullptr;
         const size_t n = std::strlen(s) + 1;
@@ -62,87 +32,55 @@ namespace {
         return p;
     }
 
-    static void mf_write_score_rule_hits(
+
+    static mf_error_t mf_build_header_from_text(
+        const char *raw_headers,
+        Header **out_header
+   );
+
+    static mf_error_t mf_analyze_header_object(
+       Header *hdr,
+       Weeder &weeder,
+       mf_result_t *out_result
+    );
+
+
+/*    static void mf_write_minimal_score_rule_hit(
         const mf_import_options_t *options,
         const char *msg_log_id,
-        const Weeder &weeder
-    )
-    {
-        if (!options || !options->target_db_path || !msg_log_id) {
-            return;
-        }
+        int final_score
+    );
+*/
+//##NEW
 
-        const auto &hits = weeder.score_hits();
-        for (const auto &hit : hits) {
-            (void)mf_insert_rule_hit(
-                options->target_db_path,
-                msg_log_id,
-                "score",
-                hit.expression.c_str(),
-                hit.is_negative,
-                hit.matched,
-                hit.header_tag.c_str(),
-                hit.header_body.c_str(),
-                hit.normalized_subject,
-                hit.score_delta
-            );
-        }
+static void mf_write_score_rule_hits(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    const Weeder &weeder
+)
+{
+    if (!options || !options->target_db_path || !msg_log_id) {
+        return;
     }
 
-    static void mf_write_allow_rule_hits(
-        const mf_import_options_t *options,
-        const char *msg_log_id,
-        const Weeder &weeder
-    )
-    {
-        if (!options || !options->target_db_path || !msg_log_id) {
-            return;
-        }
-
-        const auto &hits = weeder.allow_hits();
-        for (const auto &hit : hits) {
-            (void)mf_insert_rule_hit(
-                options->target_db_path,
-                msg_log_id,
-                "allow",
-                hit.expression.c_str(),
-                hit.is_negative,
-                hit.matched,
-                hit.header_tag.c_str(),
-                hit.header_body.c_str(),
-                hit.normalized_subject,
-                0
-            );
-        }
+    const auto &hits = weeder.score_hits();
+    for (const auto &hit : hits) {
+        (void)mf_insert_rule_hit(
+            options->target_db_path,
+            msg_log_id,
+            "score",
+            hit.expression.c_str(),
+            hit.is_negative,
+            hit.matched,
+            hit.header_tag.c_str(),
+            hit.header_body.c_str(),
+            hit.normalized_subject,
+            hit.score_delta
+        );
     }
+}
+//# Ende NEW
 
-    static void mf_write_deny_rule_hits(
-        const mf_import_options_t *options,
-        const char *msg_log_id,
-        const Weeder &weeder
-    )
-    {
-        if (!options || !options->target_db_path || !msg_log_id) {
-            return;
-        }
-
-        const auto &hits = weeder.deny_hits();
-        for (const auto &hit : hits) {
-            (void)mf_insert_rule_hit(
-                options->target_db_path,
-                msg_log_id,
-                "deny",
-                hit.expression.c_str(),
-                hit.is_negative,
-                hit.matched,
-                hit.header_tag.c_str(),
-                hit.header_body.c_str(),
-                hit.normalized_subject,
-                0
-            );
-        }
-    }
-// --------
     static mf_error_t mf_analyze_imported_header_block(
         const char *raw_headers,
         const mf_import_options_t *options,
@@ -159,98 +97,45 @@ namespace {
             return err;
         }
 
-        char *msg_log_id = nullptr;
-        err = mf_import_header_text_to_db(
-            raw_headers,
-            options,
-            serial,
-            &msg_log_id
-        );
-        if (err != MF_OK) {
-            return err;
-        }
-// ---> Debug
-//        std::fprintf(stderr,
-//                 "DEBUG analyze_imported_header_block: import ok serial=%d msg_log_id=%s\n",
-//                 serial,
-//                 msg_log_id ? msg_log_id : "(null)");
-// <--- Debug
-        Header *hdr = nullptr;
-        err = mf_build_header_from_text(raw_headers, &hdr);
-        if (err != MF_OK) {
-            std::free(msg_log_id);
-            return err;
-        }
-// ---> Debug
-//        std::fprintf(stderr,
-//                 "DEBUG analyze_imported_header_block: build_header ok serial=%d msg_log_id=%s\n",
-//                 serial,
-//                 msg_log_id ? msg_log_id : "(null)");
-// <--- Debug
-        mf_result_t result{};
-        Weeder weeder;
+        Preferences::Instance().set_headers_sqlite3_file(options->target_db_path);
 
-        err = mf_analyze_header_object(hdr, weeder, &result);
+//######NEW########
 
-        delete hdr;
+    Header *hdr = nullptr;
+    err = mf_build_header_from_text(raw_headers, &hdr);
+    if (err != MF_OK) {
+        std::free(msg_log_id);
+        return err;
+    }
 
-        if (err != MF_OK) {
-            std::free(msg_log_id);
-            mf_free_result(&result);
-            return err;
-        }
-// ---> Debug
-//        std::fprintf(stderr,
-//                 "DEBUG analyze_imported_header_block: analyze ok serial=%d msg_log_id=%s decision=%s final_score=%d\n",
-//                 serial,
-//                 msg_log_id ? msg_log_id : "(null)",
-//                 result.decision ? result.decision : "(null)",
-//                 result.final_score);
-// <--- Debug
-        const char *decision = result.decision ? result.decision : "pass";
-        const int final_score = result.final_score;
+    mf_result_t result{};
+    Weeder weeder;
 
-        err = mf_update_message_analysis_result(
-            options->target_db_path,
-            msg_log_id,
-            decision,
-            final_score
-        );
-// ---> Debug
-//        std::fprintf(stderr,
-//                 "DEBUG analyze_imported_header_block: update_result rc=%d serial=%d msg_log_id=%s\n",
-//                 (int)err,
-//                 serial,
-//                 msg_log_id ? msg_log_id : "(null)");
-// <--- Debug
+    err = mf_analyze_header_object(hdr, weeder, &result);
 
-        if (err == MF_OK && options->fill_rule_hits) {
-            mf_write_score_rule_hits(options, msg_log_id, weeder);
-            mf_write_allow_rule_hits(options, msg_log_id, weeder);
-            mf_write_deny_rule_hits(options, msg_log_id, weeder);
-        }
+    delete hdr;
 
+    if (err != MF_OK) {
+        std::free(msg_log_id);
+        mf_free_result(&result);
+        return err;
+    }
 
-// ---> Debug
-/*    if (err == MF_OK && options->fill_rule_hits) {
-        std::fprintf(stderr,
-                     "DEBUG analyze_imported_header_block: writing rule_hits serial=%d msg_log_id=%s score_hits=%zu allow_hits=%zu deny_hits=%zu\n",
-                     serial,
-                     msg_log_id ? msg_log_id : "(null)",
-                     weeder.score_hits().size(),
-                     weeder.allow_hits().size(),
-                     weeder.deny_hits().size());
+    const char *decision = result.decision ? result.decision : "pass";
+    const int final_score = result.final_score;
 
+    err = mf_update_message_analysis_result(
+        options->target_db_path,
+        msg_log_id,
+        decision,
+        final_score
+    );
+
+    if (err == MF_OK && options->fill_rule_hits) {
         mf_write_score_rule_hits(options, msg_log_id, weeder);
-        mf_write_allow_rule_hits(options, msg_log_id, weeder);
-        mf_write_deny_rule_hits(options, msg_log_id, weeder);
+    }
 
-        std::fprintf(stderr,
-                     "DEBUG analyze_imported_header_block: rule_hits write done serial=%d msg_log_id=%s\n",
-                     serial,
-                     msg_log_id ? msg_log_id : "(null)");
-    } */
-// <--- Debug
+//## New ende
 
         if (out_msg_log_id) {
             *out_msg_log_id = msg_log_id;
@@ -262,42 +147,40 @@ namespace {
         return err;
     }
 
-// <--------
+//### 0:38 fix
+static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
+{
+    if (!cfg) {
+        return MF_ERR_INVALID_ARG;
+    }
 
-    static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
-    {
-        if (!cfg) {
-            return MF_ERR_INVALID_ARG;
-        }
+    if (!cfg->rc_path || !*cfg->rc_path) {
+        return MF_ERR_RC_LOAD;
+    }
 
-        if (!cfg->rc_path || !*cfg->rc_path) {
-            return MF_ERR_RC_LOAD;
-        }
-
-        if (g_analysis_prefs_loaded && g_loaded_analysis_rc_path == cfg->rc_path) {
-            return MF_OK;
-        }
-
-        Preferences &prefs = Preferences::Instance();
-
-        prefs.kill();
-        prefs.set_rc_file(cfg->rc_path);
-
-        if (!prefs.open(cfg->rc_path)) {
-            return MF_ERR_RC_LOAD;
-        }
-
-        if (!prefs.load()) {
-            return MF_ERR_RC_LOAD;
-        }
-
-        g_loaded_analysis_rc_path = cfg->rc_path;
-        g_analysis_prefs_loaded = true;
+    if (g_analysis_prefs_loaded && g_loaded_analysis_rc_path == cfg->rc_path) {
         return MF_OK;
     }
 
-///###
-/*
+    Preferences &prefs = Preferences::Instance();
+
+    prefs.kill();
+    prefs.set_rc_file(cfg->rc_path);
+
+    if (!prefs.open(cfg->rc_path)) {
+        return MF_ERR_RC_LOAD;
+    }
+
+    if (!prefs.load()) {
+        return MF_ERR_RC_LOAD;
+    }
+
+    g_loaded_analysis_rc_path = cfg->rc_path;
+    g_analysis_prefs_loaded = true;
+    return MF_OK;
+}
+//###
+
     static mf_error_t mf_build_header_from_text(
         const char *raw_headers,
         Header **out_header
@@ -334,57 +217,8 @@ namespace {
 
         *out_header = hdr;
         return MF_OK;
-    } */
-// Ende 
-
-static mf_error_t mf_build_header_from_text(
-    const char *raw_headers,
-    Header **out_header
-)
-{
-    if (!raw_headers || !out_header) {
-        return MF_ERR_INVALID_ARG;
     }
-
-    *out_header = nullptr;
-
-    std::vector<std::pair<std::string, std::string>> fields;
-    mf_error_t err = mf_parse_headers_to_fields(raw_headers, fields);
-    if (err != MF_OK) {
-        std::fprintf(stderr, "mf_build_header_from_text: parse_headers_to_fields failed with %d\n", (int)err);
-        return err;
-    }
-
-    Header *hdr = nullptr;
-    try {
-        hdr = new Header();
-
-        for (const auto &f : fields) {
-            try {
-                hdr->add_entry(f.first.c_str(), f.second.c_str());
-            } catch (const WrongMessageIDException &) {
-                std::fprintf(
-                    stderr,
-                    "mf_build_header_from_text: WrongMessageIDException on tag='%s' body='%s'\n",
-                    f.first.c_str(),
-                    f.second.c_str()
-                );
-                delete hdr;
-                return MF_ERR_FORMAT;
-            }
-        }
-
-        hdr->set_size(static_cast<int>(std::strlen(raw_headers)));
-    } catch (...) {
-        std::fprintf(stderr, "mf_build_header_from_text: unexpected exception\n");
-        delete hdr;
-        return MF_ERR_INTERNAL;
-    }
-
-    *out_header = hdr;
-    return MF_OK;
-}
-
+// start
     static mf_error_t mf_analyze_header_object(
         Header *hdr,
         Weeder &weeder,
@@ -409,8 +243,38 @@ static mf_error_t mf_build_header_from_text(
 
         return MF_OK;
     }
+    
+/* Testweise raus
+static void mf_write_minimal_score_rule_hit(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    int final_score
+)
+{
+    if (!options || !options->target_db_path || !msg_log_id) {
+        return;
+    }
 
-} // namespace
+    if (final_score == 0) {
+        return;
+    }
+
+    (void)mf_insert_rule_hit(
+        options->target_db_path,
+        msg_log_id,
+        "score",
+        "aggregate-score",
+        0,
+        1,
+        "",
+        "",
+        0,
+        final_score
+    );
+}
+*/
+
+} // Ende Namespace
 
 const char *mf_error_string(mf_error_t err) {
     switch (err) {
@@ -502,11 +366,6 @@ mf_error_t mf_analyze_header_text(
     Weeder weeder;
     err = mf_analyze_header_object(hdr, weeder, out_result);
     delete hdr;
-
-    if (err != MF_OK) {
-        mf_free_result(out_result);
-        return err;
-    }
 
     if (!out_result->decision) {
         mf_free_result(out_result);
@@ -654,27 +513,27 @@ mf_error_t mf_import_header_file_with_options(
             return err;
         }
 
-        if (!options->dry_run) {
-            char *msg_log_id = nullptr;
+    if (!options->dry_run) {
+        char *msg_log_id = nullptr;
 
-            if (options->analyze_after_import) {
-                err = mf_analyze_imported_header_block(
-                    raw_headers,
-                    options,
-                    imported + 1,
-                    &msg_log_id
-                );
-            } else {
-                err = mf_import_header_text_to_db(
-                    raw_headers,
-                    options,
-                    imported + 1,
-                    &msg_log_id
-                );
-            }
-
-            std::free(msg_log_id);
+        if (options->analyze_after_import) {
+            err = mf_analyze_imported_header_block(
+                raw_headers,
+                options,
+                imported + 1,
+                &msg_log_id
+            );
+        } else {
+            err = mf_import_header_text_to_db(
+                raw_headers,
+                options,
+                imported + 1,
+                &msg_log_id
+            );
         }
+
+        std::free(msg_log_id);
+    }
 
         std::free(raw_headers);
 
