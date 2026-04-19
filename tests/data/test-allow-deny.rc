@@ -5,5 +5,5 @@ MAXLENGTH=2998
 NORMAL="yes"
 HIGHSCORE=100
 
-ALLOW="^Subject:.*Artemis"
-DENY="^Subject:.*Comes"
+ALLOW_NOCASE="^Subject:.*Artemis"
+DENY_NOCASE="^Subject:.*Comes"
