@@ -32,26 +32,34 @@ namespace {
         return p;
     }
 
-
     static mf_error_t mf_build_header_from_text(
         const char *raw_headers,
         Header **out_header
-   );
+    );
 
     static mf_error_t mf_analyze_header_object(
-       Header *hdr,
-       Weeder &weeder,
-       mf_result_t *out_result
+        Header *hdr,
+        Weeder &weeder,
+        mf_result_t *out_result
     );
 
-
-/*    static void mf_write_minimal_score_rule_hit(
+    static void mf_write_score_rule_hits(
         const mf_import_options_t *options,
         const char *msg_log_id,
-        int final_score
+        const Weeder &weeder
     );
-*/
-//##NEW
+
+    static void mf_write_allow_rule_hits(
+        const mf_import_options_t *options,
+        const char *msg_log_id,
+        const Weeder &weeder
+    );
+
+    static void mf_write_deny_rule_hits(
+        const mf_import_options_t *options,
+        const char *msg_log_id,
+        const Weeder &weeder
+    );
 
 static void mf_write_score_rule_hits(
     const mf_import_options_t *options,
@@ -79,6 +87,62 @@ static void mf_write_score_rule_hits(
         );
     }
 }
+
+
+static void mf_write_allow_rule_hits(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    const Weeder &weeder
+)
+{
+    if (!options || !options->target_db_path || !msg_log_id) {
+        return;
+    }
+
+    const auto &hits = weeder.allow_hits();
+    for (const auto &hit : hits) {
+        (void)mf_insert_rule_hit(
+            options->target_db_path,
+            msg_log_id,
+            "allow",
+            hit.expression.c_str(),
+            hit.is_negative,
+            hit.matched,
+            hit.header_tag.c_str(),
+            hit.header_body.c_str(),
+            hit.normalized_subject,
+            0
+        );
+    }
+}
+
+static void mf_write_deny_rule_hits(
+    const mf_import_options_t *options,
+    const char *msg_log_id,
+    const Weeder &weeder
+)
+{
+    if (!options || !options->target_db_path || !msg_log_id) {
+        return;
+    }
+
+    const auto &hits = weeder.deny_hits();
+    for (const auto &hit : hits) {
+        (void)mf_insert_rule_hit(
+            options->target_db_path,
+            msg_log_id,
+            "deny",
+            hit.expression.c_str(),
+            hit.is_negative,
+            hit.matched,
+            hit.header_tag.c_str(),
+            hit.header_body.c_str(),
+            hit.normalized_subject,
+            0
+        );
+    }
+}
+
 //# Ende NEW
 
     static mf_error_t mf_analyze_imported_header_block(
@@ -97,14 +161,60 @@ static void mf_write_score_rule_hits(
             return err;
         }
 
-        Preferences::Instance().set_headers_sqlite3_file(options->target_db_path);
+        char *msg_log_id = nullptr;
+        err = mf_import_header_text_to_db(
+            raw_headers,
+            options,
+            serial,
+            &msg_log_id
+        );
+        if (err != MF_OK) {
+            return err;
+        }
 
-//######NEW########
+        Header *hdr = nullptr;
+        err = mf_build_header_from_text(raw_headers, &hdr);
+        if (err != MF_OK) {
+            std::free(msg_log_id);
+            return err;
+        }
 
-    Header *hdr = nullptr;
-    err = mf_build_header_from_text(raw_headers, &hdr);
-    if (err != MF_OK) {
-        std::free(msg_log_id);
+        mf_result_t result{};
+        Weeder weeder;
+
+        err = mf_analyze_header_object(hdr, weeder, &result);
+
+        delete hdr;
+
+        if (err != MF_OK) {
+            std::free(msg_log_id);
+            mf_free_result(&result);
+            return err;
+        }
+
+        const char *decision = result.decision ? result.decision : "pass";
+        const int final_score = result.final_score;
+
+        err = mf_update_message_analysis_result(
+            options->target_db_path,
+            msg_log_id,
+            decision,
+            final_score
+        );
+
+        if (err == MF_OK && options->fill_rule_hits) {
+            mf_write_score_rule_hits(options, msg_log_id, weeder);
+            mf_write_allow_rule_hits(options, msg_log_id, weeder);
+            mf_write_deny_rule_hits(options, msg_log_id, weeder);
+        }
+
+        if (out_msg_log_id) {
+            *out_msg_log_id = msg_log_id;
+        } else {
+            std::free(msg_log_id);
+        }
+
+        mf_free_result(&result);
         return err;
     }
 
