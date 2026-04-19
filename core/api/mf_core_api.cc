@@ -7,6 +7,7 @@
 #include "mf_header_parse_utils.h"
 #include "weeder.hh"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -248,6 +249,8 @@ namespace {
         return MF_OK;
     }
 
+///###
+/*
     static mf_error_t mf_build_header_from_text(
         const char *raw_headers,
         Header **out_header
@@ -284,7 +287,56 @@ namespace {
 
         *out_header = hdr;
         return MF_OK;
+    } */
+// Ende 
+
+static mf_error_t mf_build_header_from_text(
+    const char *raw_headers,
+    Header **out_header
+)
+{
+    if (!raw_headers || !out_header) {
+        return MF_ERR_INVALID_ARG;
     }
+
+    *out_header = nullptr;
+
+    std::vector<std::pair<std::string, std::string>> fields;
+    mf_error_t err = mf_parse_headers_to_fields(raw_headers, fields);
+    if (err != MF_OK) {
+        std::fprintf(stderr, "mf_build_header_from_text: parse_headers_to_fields failed with %d\n", (int)err);
+        return err;
+    }
+
+    Header *hdr = nullptr;
+    try {
+        hdr = new Header();
+
+        for (const auto &f : fields) {
+            try {
+                hdr->add_entry(f.first.c_str(), f.second.c_str());
+            } catch (const WrongMessageIDException &) {
+                std::fprintf(
+                    stderr,
+                    "mf_build_header_from_text: WrongMessageIDException on tag='%s' body='%s'\n",
+                    f.first.c_str(),
+                    f.second.c_str()
+                );
+                delete hdr;
+                return MF_ERR_FORMAT;
+            }
+        }
+
+        hdr->set_size(static_cast<int>(std::strlen(raw_headers)));
+    } catch (...) {
+        std::fprintf(stderr, "mf_build_header_from_text: unexpected exception\n");
+        delete hdr;
+        return MF_ERR_INTERNAL;
+    }
+
+    *out_header = hdr;
+    return MF_OK;
+}
 
     static mf_error_t mf_analyze_header_object(
         Header *hdr,
