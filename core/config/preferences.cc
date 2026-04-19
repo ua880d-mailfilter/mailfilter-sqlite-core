@@ -86,13 +86,18 @@ void Preferences :: init (void)
   size_score.size = 0;
 }
 
-  
 void Preferences :: kill (void)
 {
   allows.clear();
   denies.clear();
   scores.clear();
+
+  if (prefs_stream.is_open ())
+    prefs_stream.close ();
+
+  prefs_stream.clear ();
 }
+  
 
 void Preferences :: set_ignore_time_stamp(bool new_ts)
 {
@@ -110,6 +115,11 @@ bool Preferences :: ignore_time_stamp()
     
 bool Preferences :: open (const char* name)
 {
+  if (prefs_stream.is_open ())
+    prefs_stream.close ();
+
+  prefs_stream.clear ();
+
   if (name && *name)
     prefs_file_name = name;
 
