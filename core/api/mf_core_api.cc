@@ -258,10 +258,13 @@ static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
         return MF_ERR_RC_LOAD;
     }
 
-// Debug
+// Debug----------------------------------------------
     std::fprintf(stderr,
-                 "DEBUG prefs: loaded rc_path=%s\n",
-                 cfg->rc_path);
+                 "DEBUG prefs: loaded rc_path=%s allow=%zu deny=%zu score=%zu\n",
+                 cfg->rc_path,
+                 Preferences::Instance().allow_filters()->size(),
+                 Preferences::Instance().deny_filters()->size(),
+                 Preferences::Instance().score_filters()->size());
 //
     g_loaded_analysis_rc_path = cfg->rc_path;
     g_analysis_prefs_loaded = true;
