@@ -218,46 +218,6 @@ static void mf_write_deny_rule_hits(
         return err;
     }
 
-    mf_result_t result{};
-    Weeder weeder;
-
-    err = mf_analyze_header_object(hdr, weeder, &result);
-
-    delete hdr;
-
-    if (err != MF_OK) {
-        std::free(msg_log_id);
-        mf_free_result(&result);
-        return err;
-    }
-
-    const char *decision = result.decision ? result.decision : "pass";
-    const int final_score = result.final_score;
-
-    err = mf_update_message_analysis_result(
-        options->target_db_path,
-        msg_log_id,
-        decision,
-        final_score
-    );
-
-    if (err == MF_OK && options->fill_rule_hits) {
-        mf_write_score_rule_hits(options, msg_log_id, weeder);
-    }
-
-//## New ende
-
-        if (out_msg_log_id) {
-            *out_msg_log_id = msg_log_id;
-        } else {
-            std::free(msg_log_id);
-        }
-
-        mf_free_result(&result);
-        return err;
-    }
-
-//### 0:38 fix
 static mf_error_t mf_prepare_analysis_preferences(const mf_config_t *cfg)
 {
     if (!cfg) {
