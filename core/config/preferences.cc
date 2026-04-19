@@ -170,6 +170,13 @@ void Preferences :: add_deny_rule (const char* keyword,
 				   const char* operat,
 				   const char* id)
 {
+// Debug
+    std::fprintf(stderr,
+             "DEBUG prefs: add_deny_rule keyword=%s oper=%s expr=%s\n",
+             keyword ? keyword : "(null)",
+             operat ? operat : "(null)",
+             id ? id : "(null)");
+// Ende Debug
   Filter cur_filter;
 
   if (strcmp (operat, "=") == 0)
@@ -196,6 +203,14 @@ void Preferences :: add_allow_rule (const char* keyword,
 				    const char* operat,
 				    const char* id)
 {
+// Debug
+    std::fprintf(stderr,
+             "DEBUG prefs: add_allow_rule keyword=%s oper=%s expr=%s\n",
+             keyword ? keyword : "(null)",
+             operat ? operat : "(null)",
+             id ? id : "(null)");
+// Ende Debug
+
   Filter cur_filter;
 
   if (strcmp (operat, "=") == 0)
