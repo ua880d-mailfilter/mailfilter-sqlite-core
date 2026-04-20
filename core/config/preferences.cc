@@ -23,7 +23,7 @@
 #include <fstream>
 #include <vector>
 #include <stdexcept>
-#include <cstdio>
+//#include <cstdio>
 #include "preferences.hh"
 #include "filter.hh"
 #include "mailfilter.hh"

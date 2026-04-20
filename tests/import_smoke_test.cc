@@ -314,6 +314,54 @@ static int run_import_check(
     return 0;
 }
 
+// Hier neu 20.04.2026
+
+static int run_open_db_check(
+    const char *db_path,
+    int expected_messages,
+    int min_header_entries,
+    int min_rule_hits
+) {
+    mf_error_t err = mf_open_existing_db(db_path, 1);
+    if (err != MF_OK) {
+        std::cerr << "mf_open_existing_db failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        return 40;
+    }
+
+    int messages = 0;
+    int header_entries = 0;
+    int rule_hits = 0;
+
+    err = mf_get_db_counts(&messages, &header_entries, &rule_hits);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_db_counts failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 41;
+    }
+
+    if (messages != expected_messages ||
+        header_entries < min_header_entries ||
+        rule_hits < min_rule_hits) {
+        std::cerr << "unexpected DB counts for " << db_path
+                  << ": messages=" << messages
+                  << " header_entries=" << header_entries
+                  << " rule_hits=" << rule_hits << "\n";
+        mf_close_existing_db();
+        return 42;
+    }
+
+    std::cout << "OPENDB file=" << db_path
+              << " messages=" << messages
+              << " header_entries=" << header_entries
+              << " rule_hits=" << rule_hits
+              << "\n";
+
+    mf_close_existing_db();
+    return 0;
+}
+
 int main() {
     int rc = run_import_check(
         "score-lf",
@@ -348,6 +396,37 @@ int main() {
     );
     if (rc != 0) {
         mf_shutdown();
+        return rc;
+    }
+
+// Neu
+    rc = run_open_db_check(
+        "build/test-import-score-lf.sqlite3",
+        2,
+        1,
+        1
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_open_db_check(
+        "build/test-import-allowdeny-lf.sqlite3",
+        2,
+        1,
+        1
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_open_db_check(
+        "build/test-import-score-crlf.sqlite3",
+        2,
+        1,
+        1
+    );
+    if (rc != 0) {
         return rc;
     }
 
