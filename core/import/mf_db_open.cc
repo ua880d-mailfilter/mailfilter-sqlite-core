@@ -54,7 +54,7 @@ static mf_error_t query_table_count(sqlite3 *db, const char *table_name, int *ou
 }
 } // namespace
 
-extern "C" mf_error_t mf_db_open_existing(const char *db_path, int open_read_only)
+mf_error_t mf_db_open_existing(const char *db_path, int open_read_only)
 {
     if (!db_path || !*db_path) {
         return MF_ERR_INVALID_ARG;
@@ -80,7 +80,7 @@ extern "C" mf_error_t mf_db_open_existing(const char *db_path, int open_read_onl
     return mf_db_validate_required_schema();
 }
 
-extern "C" mf_error_t mf_db_close_existing(void)
+mf_error_t mf_db_close_existing(void)
 {
     if (g_external_db) {
         sqlite3_close(g_external_db);
@@ -90,7 +90,7 @@ extern "C" mf_error_t mf_db_close_existing(void)
     return MF_OK;
 }
 
-extern "C" mf_error_t mf_db_validate_required_schema(void)
+mf_error_t mf_db_validate_required_schema(void)
 {
     if (!g_external_db) {
         return MF_ERR_NOT_INITIALIZED;
@@ -111,7 +111,7 @@ extern "C" mf_error_t mf_db_validate_required_schema(void)
     return MF_OK;
 }
 
-extern "C" mf_error_t mf_get_db_counts(
+mf_error_t mf_db_get_counts(
     int *out_messages,
     int *out_header_entries,
     int *out_rule_hits

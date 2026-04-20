@@ -691,6 +691,23 @@ mf_error_t mf_validate_schema(void) {
     return mf_db_validate_required_schema();
 }
 
+// Hier Open Wrapper (read count)
+
+mf_error_t mf_get_db_counts(
+    int *out_messages,
+    int *out_header_entries,
+    int *out_rule_hits
+)
+{
+    return mf_db_get_counts(
+        out_messages,
+        out_header_entries,
+        out_rule_hits
+    );
+}
+
+// Ende Open Wrapper
+
 void mf_shutdown(void) {
 /* Debug
     std::fprintf(stderr,
