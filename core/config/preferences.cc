@@ -189,13 +189,13 @@ bool Preferences :: load (void)
     {
       RCParser rcparser(&prefs_stream);
       rcparser.parse();
-
+/*
       std::fprintf(stderr,
                    "DEBUG prefs: parse rc=%d allows=%zu denies=%zu scores=%zu\n",
                    allows.size(),
                    denies.size(),
                    scores.size());
-
+*/
     }
   catch (...) { throw; }
 
@@ -234,13 +234,13 @@ void Preferences :: add_deny_rule (const char* keyword,
 				   const char* operat,
 				   const char* id)
 {
-// Debug
+/* Debug
     std::fprintf(stderr,
              "DEBUG prefs: add_deny_rule keyword=%s oper=%s expr=%s\n",
              keyword ? keyword : "(null)",
              operat ? operat : "(null)",
              id ? id : "(null)");
-// Ende Debug
+*/  
   Filter cur_filter;
 
   if (strcmp (operat, "=") == 0)
@@ -267,13 +267,13 @@ void Preferences :: add_allow_rule (const char* keyword,
 				    const char* operat,
 				    const char* id)
 {
-// Debug
+/* Debug
     std::fprintf(stderr,
              "DEBUG prefs: add_allow_rule keyword=%s oper=%s expr=%s\n",
              keyword ? keyword : "(null)",
              operat ? operat : "(null)",
              id ? id : "(null)");
-// Ende Debug
+*/
 
   Filter cur_filter;
 
