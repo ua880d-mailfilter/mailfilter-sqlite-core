@@ -362,6 +362,91 @@ static int run_open_db_check(
     return 0;
 }
 
+// Helper Funktion Reader-Check 
+
+static int run_message_reader_check(
+    const char *db_path,
+    int expected_count,
+    const char *expected_msg1_id,
+    const char *expected_msg1_decision,
+    int expected_msg1_score,
+    const char *expected_msg2_id,
+    const char *expected_msg2_decision,
+    int expected_msg2_score
+) {
+    mf_error_t err = mf_open_existing_db(db_path, 1);
+    if (err != MF_OK) {
+        std::cerr << "mf_open_existing_db failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        return 50;
+    }
+
+    int count = 0;
+    err = mf_get_message_count(&count);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_message_count failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 51;
+    }
+
+    if (count != expected_count) {
+        std::cerr << "unexpected message count for " << db_path
+                  << ": " << count << "\n";
+        mf_close_existing_db();
+        return 52;
+    }
+
+    mf_message_summary_t msg1{};
+    err = mf_get_message_summary_at(0, &msg1);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_message_summary_at(0) failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 53;
+    }
+
+    mf_message_summary_t msg2{};
+    err = mf_get_message_summary_at(1, &msg2);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_message_summary_at(1) failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 54;
+    }
+
+    if (std::string(msg1.msg_log_id) != expected_msg1_id ||
+        std::string(msg1.decision) != expected_msg1_decision ||
+        msg1.final_score != expected_msg1_score) {
+        std::cerr << "unexpected first message summary for " << db_path
+                  << ": " << msg1.msg_log_id << "/" << msg1.decision
+                  << "/" << msg1.final_score << "\n";
+        mf_close_existing_db();
+        return 55;
+    }
+
+    if (std::string(msg2.msg_log_id) != expected_msg2_id ||
+        std::string(msg2.decision) != expected_msg2_decision ||
+        msg2.final_score != expected_msg2_score) {
+        std::cerr << "unexpected second message summary for " << db_path
+                  << ": " << msg2.msg_log_id << "/" << msg2.decision
+                  << "/" << msg2.final_score << "\n";
+        mf_close_existing_db();
+        return 56;
+    }
+
+    std::cout << "READER file=" << db_path
+              << " count=" << count
+              << " msg1=" << msg1.msg_log_id << ":" << msg1.decision << ":" << msg1.final_score
+              << " msg2=" << msg2.msg_log_id << ":" << msg2.decision << ":" << msg2.final_score
+              << "\n";
+
+    mf_close_existing_db();
+    return 0;
+}
+
+// Ende Reader-Check
+
 int main() {
     int rc = run_import_check(
         "score-lf",
@@ -425,6 +510,36 @@ int main() {
         2,
         1,
         1
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_message_reader_check(
+        "build/test-import-score-lf.sqlite3",
+        2,
+        "imp-1", "pass", 50,
+        "imp-2", "pass", 50
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_message_reader_check(
+        "build/test-import-allowdeny-lf.sqlite3",
+        2,
+        "imp-1", "allow", 0,
+        "imp-2", "deny", 0
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_message_reader_check(
+        "build/test-import-score-crlf.sqlite3",
+        2,
+        "imp-1", "pass", 50,
+        "imp-2", "pass", 50
     );
     if (rc != 0) {
         return rc;

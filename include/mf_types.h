@@ -69,6 +69,13 @@ typedef struct mf_import_options_t {
     int dry_run;
 } mf_import_options_t;
 
+typedef struct mf_message_summary_t {
+    char msg_log_id[64];
+    char decision[32];
+    int final_score;
+    char subject[512];
+} mf_message_summary_t;
+
 #ifdef __cplusplus
 }
 #endif

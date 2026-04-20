@@ -36,6 +36,15 @@ mf_error_t mf_get_db_counts(
     int *out_rule_hits
 );
 
+// New -> DB Read
+mf_error_t mf_get_message_count(int *out_count);
+
+mf_error_t mf_get_message_summary_at(
+    int index,
+    mf_message_summary_t *out_summary
+);
+// End DB Read
+
 mf_error_t mf_import_sequential_header_file(
     const char *input_path,
     int analyze_and_store,

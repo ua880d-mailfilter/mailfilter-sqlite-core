@@ -1,8 +1,9 @@
 #include "mf_db_open.h"
 
 #include <sqlite3.h>
+#include <cstdio>
+#include <cstring>
 #include <string>
-
 
 namespace {
 sqlite3 *g_external_db = nullptr;
@@ -52,7 +53,22 @@ static mf_error_t query_table_count(sqlite3 *db, const char *table_name, int *ou
     sqlite3_finalize(stmt);
     return err;
 }
-} // namespace
+
+static void copy_sqlite_text(char *dst, size_t dst_size, const unsigned char *src)
+{
+    if (!dst || dst_size == 0) {
+        return;
+    }
+
+    if (!src) {
+        dst[0] = '\0';
+        return;
+    }
+
+    std::snprintf(dst, dst_size, "%s", reinterpret_cast<const char *>(src));
+}
+
+} // Ende namespace
 
 mf_error_t mf_db_open_existing(const char *db_path, int open_read_only)
 {
@@ -146,4 +162,81 @@ mf_error_t mf_db_get_counts(
     }
 
     return MF_OK;
+}
+
+mf_error_t mf_db_get_message_count(int *out_count)
+{
+    if (!g_external_db) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    if (!out_count) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    mf_error_t err = mf_db_validate_required_schema();
+    if (err != MF_OK) {
+        return err;
+    }
+
+    return query_table_count(g_external_db, "messages", out_count);
+}
+
+mf_error_t mf_db_get_message_summary_at(
+    int index,
+    mf_message_summary_t *out_summary
+)
+{
+    if (!g_external_db) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    if (!out_summary || index < 0) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    mf_error_t err = mf_db_validate_required_schema();
+    if (err != MF_OK) {
+        return err;
+    }
+
+    std::memset(out_summary, 0, sizeof(*out_summary));
+
+    const char *sql =
+        "SELECT msg_log_id, decision, final_score, subject "
+        "FROM messages "
+        "ORDER BY msg_log_id "
+        "LIMIT 1 OFFSET ?;";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(g_external_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return MF_ERR_DB_OPEN;
+    }
+
+    sqlite3_bind_int(stmt, 1, index);
+
+    err = MF_ERR_INVALID_ARG;
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        copy_sqlite_text(
+            out_summary->msg_log_id,
+            sizeof(out_summary->msg_log_id),
+            sqlite3_column_text(stmt, 0)
+        );
+        copy_sqlite_text(
+            out_summary->decision,
+            sizeof(out_summary->decision),
+            sqlite3_column_text(stmt, 1)
+        );
+        out_summary->final_score = sqlite3_column_int(stmt, 2);
+        copy_sqlite_text(
+            out_summary->subject,
+            sizeof(out_summary->subject),
+            sqlite3_column_text(stmt, 3)
+        );
+        err = MF_OK;
+    }
+
+    sqlite3_finalize(stmt);
+    return err;
 }

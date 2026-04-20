@@ -706,6 +706,27 @@ mf_error_t mf_get_db_counts(
     );
 }
 
+mf_error_t mf_get_message_count(int *out_count)
+{
+    if (!g_initialized) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    return mf_db_get_message_count(out_count);
+}
+
+mf_error_t mf_get_message_summary_at(
+    int index,
+    mf_message_summary_t *out_summary
+)
+{
+    if (!g_initialized) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    return mf_db_get_message_summary_at(index, out_summary);
+}
+
 // Ende Open Wrapper
 
 void mf_shutdown(void) {
