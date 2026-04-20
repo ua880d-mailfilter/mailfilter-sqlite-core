@@ -3,6 +3,7 @@
 #include <sqlite3.h>
 #include <string>
 
+
 namespace {
 sqlite3 *g_external_db = nullptr;
 
@@ -53,7 +54,7 @@ static mf_error_t query_table_count(sqlite3 *db, const char *table_name, int *ou
 }
 } // namespace
 
-mf_error_t mf_db_open_existing(const char *db_path, int open_read_only)
+extern "C" mf_error_t mf_db_open_existing(const char *db_path, int open_read_only)
 {
     if (!db_path || !*db_path) {
         return MF_ERR_INVALID_ARG;
@@ -79,7 +80,7 @@ mf_error_t mf_db_open_existing(const char *db_path, int open_read_only)
     return mf_db_validate_required_schema();
 }
 
-mf_error_t mf_db_close_existing(void)
+extern "C" mf_error_t mf_db_close_existing(void)
 {
     if (g_external_db) {
         sqlite3_close(g_external_db);
@@ -89,7 +90,7 @@ mf_error_t mf_db_close_existing(void)
     return MF_OK;
 }
 
-mf_error_t mf_db_validate_required_schema(void)
+extern "C" mf_error_t mf_db_validate_required_schema(void)
 {
     if (!g_external_db) {
         return MF_ERR_NOT_INITIALIZED;
@@ -110,7 +111,7 @@ mf_error_t mf_db_validate_required_schema(void)
     return MF_OK;
 }
 
-mf_error_t mf_get_db_counts(
+extern "C" mf_error_t mf_get_db_counts(
     int *out_messages,
     int *out_header_entries,
     int *out_rule_hits
