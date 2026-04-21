@@ -716,10 +716,10 @@ int main() {
         2,
         "imp-1", "pass", 50,
         "Mon, 16 Mar 2026 17:29:07 +0100",
-        "sender1@example.org",
+        "\"Example Sender 1\" <sender1@example.org>",
         "imp-2", "pass", 50,
         "Tue, 17 Mar 2026 08:15:00 +0100",
-        "sender2@example.net"
+        "\"Example Sender 2\" <sender2@example.net>"
     );
     if (rc != 0) {
         return rc;
@@ -730,10 +730,10 @@ int main() {
         2,
         "imp-1", "allow", 0,
         "Mon, 16 Mar 2026 17:29:07 +0100",
-        "sender1@example.org",
+        "\"Example Sender 1\" <sender1@example.org>",
         "imp-2", "deny", 0,
         "Tue, 17 Mar 2026 08:15:00 +0100",
-        "sender2@example.net"
+        "\"Example Sender 2\" <sender2@example.net>"
     );
     if (rc != 0) {
         return rc;
@@ -744,10 +744,10 @@ int main() {
         2,
         "imp-1", "pass", 50,
         "Mon, 16 Mar 2026 17:29:07 +0100",
-        "sender1@example.org",
+        "\"Example Sender 1\" <sender1@example.org>",
         "imp-2", "pass", 50,
         "Tue, 17 Mar 2026 08:15:00 +0100",
-        "sender2@example.net"
+        "\"Example Sender 2\" <sender2@example.net>"
     );
     if (rc != 0) {
         return rc;
