@@ -56,6 +56,17 @@ mf_error_t mf_get_header_at(
     mf_header_entry_t *out_entry
 );
 
+mf_error_t mf_get_rule_hit_count_for_message(
+    const char *msg_log_id,
+    int *out_count
+);
+
+mf_error_t mf_get_rule_hit_at(
+    const char *msg_log_id,
+    int index,
+    mf_rule_hit_t *out_hit
+);
+
 // End DB Read
 
 mf_error_t mf_import_sequential_header_file(

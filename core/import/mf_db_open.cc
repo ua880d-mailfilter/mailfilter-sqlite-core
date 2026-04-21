@@ -342,3 +342,119 @@ mf_error_t mf_db_get_header_at(
     sqlite3_finalize(stmt);
     return err;
 }
+
+mf_error_t mf_db_get_rule_hit_count_for_message(
+    const char *msg_log_id,
+    int *out_count
+)
+{
+    if (!g_external_db) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    if (!msg_log_id || !*msg_log_id || !out_count) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    mf_error_t err = mf_db_validate_required_schema();
+    if (err != MF_OK) {
+        return err;
+    }
+
+    const char *sql =
+        "SELECT COUNT(*) "
+        "FROM rule_hits "
+        "WHERE msg_log_id = ?;";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(g_external_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return MF_ERR_DB_OPEN;
+    }
+
+    sqlite3_bind_text(stmt, 1, msg_log_id, -1, SQLITE_STATIC);
+
+    err = MF_ERR_DB_OPEN;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        *out_count = sqlite3_column_int(stmt, 0);
+        err = MF_OK;
+    }
+
+    sqlite3_finalize(stmt);
+    return err;
+}
+
+mf_error_t mf_db_get_rule_hit_at(
+    const char *msg_log_id,
+    int index,
+    mf_rule_hit_t *out_hit
+)
+{
+    if (!g_external_db) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    if (!msg_log_id || !*msg_log_id || !out_hit || index < 0) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    mf_error_t err = mf_db_validate_required_schema();
+    if (err != MF_OK) {
+        return err;
+    }
+
+    std::memset(out_hit, 0, sizeof(*out_hit));
+
+    const char *sql =
+        "SELECT msg_log_id, phase, expression, is_negative, matched, "
+        "header_tag, header_body, normalized_subject, score_delta "
+        "FROM rule_hits "
+        "WHERE msg_log_id = ? "
+        "ORDER BY id "
+        "LIMIT 1 OFFSET ?;";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(g_external_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return MF_ERR_DB_OPEN;
+    }
+
+    sqlite3_bind_text(stmt, 1, msg_log_id, -1, SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 2, index);
+
+    err = MF_ERR_INVALID_ARG;
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        copy_sqlite_text(
+            out_hit->msg_log_id,
+            sizeof(out_hit->msg_log_id),
+            sqlite3_column_text(stmt, 0)
+        );
+        copy_sqlite_text(
+            out_hit->phase,
+            sizeof(out_hit->phase),
+            sqlite3_column_text(stmt, 1)
+        );
+        copy_sqlite_text(
+            out_hit->expression,
+            sizeof(out_hit->expression),
+            sqlite3_column_text(stmt, 2)
+        );
+        out_hit->is_negative = sqlite3_column_int(stmt, 3);
+        out_hit->matched = sqlite3_column_int(stmt, 4);
+        copy_sqlite_text(
+            out_hit->header_tag,
+            sizeof(out_hit->header_tag),
+            sqlite3_column_text(stmt, 5)
+        );
+        copy_sqlite_text(
+            out_hit->header_body,
+            sizeof(out_hit->header_body),
+            sqlite3_column_text(stmt, 6)
+        );
+        out_hit->normalized_subject = sqlite3_column_int(stmt, 7);
+        out_hit->score_delta = sqlite3_column_int(stmt, 8);
+        err = MF_OK;
+    }
+
+    sqlite3_finalize(stmt);
+    return err;
+}

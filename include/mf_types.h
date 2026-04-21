@@ -83,6 +83,18 @@ typedef struct mf_header_entry_t {
     char body[2048];
 } mf_header_entry_t;
 
+typedef struct mf_rule_hit_t {
+    char msg_log_id[64];
+    char phase[32];
+    char expression[512];
+    int is_negative;
+    int matched;
+    char header_tag[128];
+    char header_body[2048];
+    int normalized_subject;
+    int score_delta;
+} mf_rule_hit_t;
+
 #ifdef __cplusplus
 }
 #endif

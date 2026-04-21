@@ -530,6 +530,103 @@ static int run_header_reader_check(
     return 0;
 }
 
+static int run_rule_hit_reader_check(
+    const char *db_path,
+    const char *msg_log_id,
+    int expected_count,
+    const char *expected_phase0,
+    const char *expected_expr0,
+    int expected_score_delta0,
+    const char *expected_phase1,
+    const char *expected_expr1,
+    int expected_score_delta1
+) {
+    mf_error_t err = mf_open_existing_db(db_path, 1);
+    if (err != MF_OK) {
+        std::cerr << "mf_open_existing_db failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        return 70;
+    }
+
+    int count = 0;
+    err = mf_get_rule_hit_count_for_message(msg_log_id, &count);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_rule_hit_count_for_message failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 71;
+    }
+
+    if (count != expected_count) {
+        std::cerr << "unexpected rule_hit count for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << count << "\n";
+        mf_close_existing_db();
+        return 72;
+    }
+
+    mf_rule_hit_t hit0{};
+    err = mf_get_rule_hit_at(msg_log_id, 0, &hit0);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_rule_hit_at(0) failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 73;
+    }
+
+    mf_rule_hit_t hit1{};
+    if (expected_count > 1) {
+        err = mf_get_rule_hit_at(msg_log_id, 1, &hit1);
+        if (err != MF_OK) {
+            std::cerr << "mf_get_rule_hit_at(1) failed for " << db_path
+                      << " msg_log_id=" << msg_log_id
+                      << ": " << mf_error_string(err) << "\n";
+            mf_close_existing_db();
+            return 74;
+        }
+    }
+
+    if (std::string(hit0.msg_log_id) != msg_log_id ||
+        std::string(hit0.phase) != expected_phase0 ||
+        std::string(hit0.expression) != expected_expr0 ||
+        hit0.score_delta != expected_score_delta0) {
+        std::cerr << "unexpected first rule_hit for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << hit0.msg_log_id << "/" << hit0.phase
+                  << "/" << hit0.expression << "/" << hit0.score_delta << "\n";
+        mf_close_existing_db();
+        return 75;
+    }
+
+    if (expected_count > 1) {
+        if (std::string(hit1.msg_log_id) != msg_log_id ||
+            std::string(hit1.phase) != expected_phase1 ||
+            std::string(hit1.expression) != expected_expr1 ||
+            hit1.score_delta != expected_score_delta1) {
+            std::cerr << "unexpected second rule_hit for " << db_path
+                      << " msg_log_id=" << msg_log_id
+                      << ": " << hit1.msg_log_id << "/" << hit1.phase
+                      << "/" << hit1.expression << "/" << hit1.score_delta << "\n";
+            mf_close_existing_db();
+            return 76;
+        }
+    }
+
+    std::cout << "RULEHITREADER file=" << db_path
+              << " msg=" << msg_log_id
+              << " count=" << count
+              << " hit0=" << hit0.phase << ":" << hit0.expression << ":" << hit0.score_delta;
+    if (expected_count > 1) {
+        std::cout << " hit1=" << hit1.phase << ":" << hit1.expression << ":" << hit1.score_delta;
+    }
+    std::cout << "\n";
+
+    mf_close_existing_db();
+    return 0;
+}
+
 // Ende Reader-Check
 
 int main() {
@@ -658,6 +755,40 @@ int main() {
         8,
         "Return-path",
         "Delivery-date"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_rule_hit_reader_check(
+        "build/test-import-score-lf.sqlite3",
+        "imp-1",
+        3,
+        "score", "^Received:", 50,
+        "score", "^From:", -1
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+
+    rc = run_rule_hit_reader_check(
+        "build/test-import-allowdeny-lf.sqlite3",
+        "imp-1",
+        1,
+        "allow", "^Subject:.*Artemis", 0,
+        "allow", "^Subject:.*Artemis", 0
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_rule_hit_reader_check(
+        "build/test-import-score-crlf.sqlite3",
+        "imp-1",
+        3,
+        "score", "^Received:", 50,
+        "score", "^From:", -1
     );
     if (rc != 0) {
         return rc;
