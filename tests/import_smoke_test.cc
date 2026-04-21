@@ -635,7 +635,7 @@ int main() {
         "imp-1",
         8,
         "Return-path",
-        "Envelope-To"
+        "Delivery-date"
     );
     if (rc != 0) {
         return rc;
@@ -646,7 +646,7 @@ int main() {
         "imp-1",
         8,
         "Return-path",
-        "Envelope-To"
+        "Delivery-date"
     );
     if (rc != 0) {
         return rc;
@@ -657,7 +657,7 @@ int main() {
         "imp-1",
         8,
         "Return-path",
-        "Envelope-To"
+        "Delivery-date"
     );
     if (rc != 0) {
         return rc;
