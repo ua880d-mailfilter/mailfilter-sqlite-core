@@ -727,6 +727,31 @@ mf_error_t mf_get_message_summary_at(
     return mf_db_get_message_summary_at(index, out_summary);
 }
 
+mf_error_t mf_get_header_count_for_message(
+    const char *msg_log_id,
+    int *out_count
+)
+{
+    if (!g_initialized) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    return mf_db_get_header_count_for_message(msg_log_id, out_count);
+}
+
+mf_error_t mf_get_header_at(
+    const char *msg_log_id,
+    int index,
+    mf_header_entry_t *out_entry
+)
+{
+    if (!g_initialized) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    return mf_db_get_header_at(msg_log_id, index, out_entry);
+}
+
 // Ende Open Wrapper
 
 void mf_shutdown(void) {

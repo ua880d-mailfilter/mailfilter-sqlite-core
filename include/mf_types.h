@@ -76,6 +76,13 @@ typedef struct mf_message_summary_t {
     char subject[512];
 } mf_message_summary_t;
 
+typedef struct mf_header_entry_t {
+    char msg_log_id[64];
+    int ordinal;
+    char tag[128];
+    char body[2048];
+} mf_header_entry_t;
+
 #ifdef __cplusplus
 }
 #endif

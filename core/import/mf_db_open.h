@@ -25,6 +25,17 @@ mf_error_t mf_db_get_message_summary_at(
     mf_message_summary_t *out_summary
 );
 
+mf_error_t mf_db_get_header_count_for_message(
+    const char *msg_log_id,
+    int *out_count
+);
+
+mf_error_t mf_db_get_header_at(
+    const char *msg_log_id,
+    int index,
+    mf_header_entry_t *out_entry
+);
+
 // Ende DB Read
 
 #endif

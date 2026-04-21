@@ -445,6 +445,91 @@ static int run_message_reader_check(
     return 0;
 }
 
+static int run_header_reader_check(
+    const char *db_path,
+    const char *msg_log_id,
+    int expected_count,
+    const char *expected_tag0,
+    const char *expected_tag1
+) {
+    mf_error_t err = mf_open_existing_db(db_path, 1);
+    if (err != MF_OK) {
+        std::cerr << "mf_open_existing_db failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        return 60;
+    }
+
+    int count = 0;
+    err = mf_get_header_count_for_message(msg_log_id, &count);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_header_count_for_message failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 61;
+    }
+
+    if (count != expected_count) {
+        std::cerr << "unexpected header count for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << count << "\n";
+        mf_close_existing_db();
+        return 62;
+    }
+
+    mf_header_entry_t hdr0{};
+    err = mf_get_header_at(msg_log_id, 0, &hdr0);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_header_at(0) failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 63;
+    }
+
+    mf_header_entry_t hdr1{};
+    err = mf_get_header_at(msg_log_id, 1, &hdr1);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_header_at(1) failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 64;
+    }
+
+    if (std::string(hdr0.msg_log_id) != msg_log_id ||
+        hdr0.ordinal != 0 ||
+        std::string(hdr0.tag) != expected_tag0) {
+        std::cerr << "unexpected first header for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << hdr0.msg_log_id << "/" << hdr0.ordinal
+                  << "/" << hdr0.tag << "\n";
+        mf_close_existing_db();
+        return 65;
+    }
+
+    if (std::string(hdr1.msg_log_id) != msg_log_id ||
+        hdr1.ordinal != 1 ||
+        std::string(hdr1.tag) != expected_tag1) {
+        std::cerr << "unexpected second header for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << hdr1.msg_log_id << "/" << hdr1.ordinal
+                  << "/" << hdr1.tag << "\n";
+        mf_close_existing_db();
+        return 66;
+    }
+
+    std::cout << "HEADERREADER file=" << db_path
+              << " msg=" << msg_log_id
+              << " count=" << count
+              << " hdr0=" << hdr0.ordinal << ":" << hdr0.tag
+              << " hdr1=" << hdr1.ordinal << ":" << hdr1.tag
+              << "\n";
+
+    mf_close_existing_db();
+    return 0;
+}
+
 // Ende Reader-Check
 
 int main() {
@@ -540,6 +625,39 @@ int main() {
         2,
         "imp-1", "pass", 50,
         "imp-2", "pass", 50
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_header_reader_check(
+        "build/test-import-score-lf.sqlite3",
+        "imp-1",
+        8,
+        "Return-path",
+        "Envelope-To"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_header_reader_check(
+        "build/test-import-allowdeny-lf.sqlite3",
+        "imp-1",
+        8,
+        "Return-path",
+        "Envelope-To"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_header_reader_check(
+        "build/test-import-score-crlf.sqlite3",
+        "imp-1",
+        8,
+        "Return-path",
+        "Envelope-To"
     );
     if (rc != 0) {
         return rc;

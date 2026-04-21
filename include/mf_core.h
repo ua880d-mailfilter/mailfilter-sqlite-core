@@ -36,13 +36,26 @@ mf_error_t mf_get_db_counts(
     int *out_rule_hits
 );
 
-// New -> DB Read
+// New -> DB Read Funktionen
+
 mf_error_t mf_get_message_count(int *out_count);
 
 mf_error_t mf_get_message_summary_at(
     int index,
     mf_message_summary_t *out_summary
 );
+
+mf_error_t mf_get_header_count_for_message(
+    const char *msg_log_id,
+    int *out_count
+);
+
+mf_error_t mf_get_header_at(
+    const char *msg_log_id,
+    int index,
+    mf_header_entry_t *out_entry
+);
+
 // End DB Read
 
 mf_error_t mf_import_sequential_header_file(
