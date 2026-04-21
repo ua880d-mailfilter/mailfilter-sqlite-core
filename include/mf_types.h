@@ -77,6 +77,7 @@ typedef struct mf_message_summary_t {
     char date_hdr[128];
     char created_at[32];
     char from_addr[256];
+    char to_addr[256];
 } mf_message_summary_t;
 
 typedef struct mf_header_entry_t {

@@ -376,7 +376,8 @@ static int run_message_reader_check(
     const char *expected_msg2_decision,
     int expected_msg2_score,
     const char *expected_msg2_date_hdr,
-    const char *expected_msg2_from_addr
+    const char *expected_msg2_from_addr,
+    const char *expected_msg2_to_addr
 ) {
     mf_error_t err = mf_open_existing_db(db_path, 1);
     if (err != MF_OK) {
@@ -424,11 +425,13 @@ static int run_message_reader_check(
         msg1.final_score != expected_msg1_score ||
         std::string(msg1.date_hdr) != expected_msg1_date_hdr ||
         std::string(msg1.from_addr) != expected_msg1_from_addr ||
+        std::string(msg1.to_addr) != expected_msg1_to_addr ||
         std::string(msg1.created_at).empty()) {
         std::cerr << "unexpected first message summary for " << db_path
                   << ": " << msg1.msg_log_id << "/" << msg1.decision
                   << "/" << msg1.final_score << "/" << msg1.date_hdr
-                  << "/" << msg1.from_addr << "/" << msg1.created_at << "\n";
+                  << "/" << msg1.from_addr << "/" << msg1.to_addr
+                  << "/" << msg1.created_at << "\n";
         mf_close_existing_db();
         return 55;
     }
@@ -438,11 +441,13 @@ static int run_message_reader_check(
         msg2.final_score != expected_msg2_score ||
         std::string(msg2.date_hdr) != expected_msg2_date_hdr ||
         std::string(msg2.from_addr) != expected_msg2_from_addr ||
+        std::string(msg2.to_addr) != expected_msg2_to_addr ||
         std::string(msg2.created_at).empty()) {
         std::cerr << "unexpected second message summary for " << db_path
                   << ": " << msg2.msg_log_id << "/" << msg2.decision
                   << "/" << msg2.final_score << "/" << msg2.date_hdr
-                  << "/" << msg2.from_addr << "/" << msg2.created_at << "\n";
+                  << "/" << msg2.from_addr << "/" << msg2.to_addr
+                  << "/" << msg2.created_at << "\n";
         mf_close_existing_db();
         return 56;
     }
@@ -450,9 +455,9 @@ static int run_message_reader_check(
     std::cout << "READER file=" << db_path
               << " count=" << count
               << " msg1=" << msg1.msg_log_id << ":" << msg1.decision << ":" << msg1.final_score
-              << ":" << msg1.date_hdr << ":" << msg1.from_addr
+              << ":" << msg1.date_hdr << ":" << msg1.from_addr << ":" << msg1.to_addr
               << " msg2=" << msg2.msg_log_id << ":" << msg2.decision << ":" << msg2.final_score
-              << ":" << msg2.date_hdr << ":" << msg2.from_addr
+              << ":" << msg2.date_hdr << ":" << msg2.from_addr << ":" << msg2.to_addr
               << "\n";
 
     mf_close_existing_db();
@@ -717,9 +722,11 @@ int main() {
         "imp-1", "pass", 50,
         "Mon, 16 Mar 2026 17:29:07 +0100",
         "\"Example Sender 1\" <sender1@example.org>",
+        "<user@example.org>,
         "imp-2", "pass", 50,
         "Tue, 17 Mar 2026 08:15:00 +0100",
-        "\"Example Sender 2\" <sender2@example.net>"
+        "\"Example Sender 2\" <sender2@example.net>",
+        "<user@example.net>"
     );
     if (rc != 0) {
         return rc;
@@ -731,9 +738,11 @@ int main() {
         "imp-1", "allow", 0,
         "Mon, 16 Mar 2026 17:29:07 +0100",
         "\"Example Sender 1\" <sender1@example.org>",
+        "<user@example.org>",
         "imp-2", "deny", 0,
         "Tue, 17 Mar 2026 08:15:00 +0100",
-        "\"Example Sender 2\" <sender2@example.net>"
+        "\"Example Sender 2\" <sender2@example.net>",
+        "<user@example.net>"
     );
     if (rc != 0) {
         return rc;
@@ -745,9 +754,11 @@ int main() {
         "imp-1", "pass", 50,
         "Mon, 16 Mar 2026 17:29:07 +0100",
         "\"Example Sender 1\" <sender1@example.org>",
+        "<user@example.org>",
         "imp-2", "pass", 50,
         "Tue, 17 Mar 2026 08:15:00 +0100",
-        "\"Example Sender 2\" <sender2@example.net>"
+        "\"Example Sender 2\" <sender2@example.net>",
+        "<user@example.net>"
     );
     if (rc != 0) {
         return rc;
