@@ -372,6 +372,7 @@ static int run_message_reader_check(
     int expected_msg1_score,
     const char *expected_msg1_date_hdr,
     const char *expected_msg1_from_addr,
+    const char *expected_msg1_to_addr,
     const char *expected_msg2_id,
     const char *expected_msg2_decision,
     int expected_msg2_score,
