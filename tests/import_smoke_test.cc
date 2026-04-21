@@ -420,6 +420,7 @@ static int run_message_reader_check(
         return 54;
     }
 
+
     if (std::string(msg1.msg_log_id) != expected_msg1_id ||
         std::string(msg1.decision) != expected_msg1_decision ||
         msg1.final_score != expected_msg1_score ||
@@ -722,7 +723,7 @@ int main() {
         "imp-1", "pass", 50,
         "Mon, 16 Mar 2026 17:29:07 +0100",
         "\"Example Sender 1\" <sender1@example.org>",
-        "<user@example.org>,
+        "<user@example.org>",
         "imp-2", "pass", 50,
         "Tue, 17 Mar 2026 08:15:00 +0100",
         "\"Example Sender 2\" <sender2@example.net>",
