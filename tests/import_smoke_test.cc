@@ -498,7 +498,7 @@ static int run_header_reader_check(
     }
 
     if (std::string(hdr0.msg_log_id) != msg_log_id ||
-        hdr0.ordinal != 0 ||
+        hdr0.ordinal != 1 ||
         std::string(hdr0.tag) != expected_tag0) {
         std::cerr << "unexpected first header for " << db_path
                   << " msg_log_id=" << msg_log_id
@@ -509,7 +509,7 @@ static int run_header_reader_check(
     }
 
     if (std::string(hdr1.msg_log_id) != msg_log_id ||
-        hdr1.ordinal != 1 ||
+        hdr1.ordinal != 2 ||
         std::string(hdr1.tag) != expected_tag1) {
         std::cerr << "unexpected second header for " << db_path
                   << " msg_log_id=" << msg_log_id
