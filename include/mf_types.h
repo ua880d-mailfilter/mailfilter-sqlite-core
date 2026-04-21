@@ -84,7 +84,7 @@ typedef struct mf_header_entry_t {
     char msg_log_id[64];
     int ordinal;
     char tag[128];
-    char body[2048];
+    char body[4096];
 } mf_header_entry_t;
 
 typedef struct mf_rule_hit_t {

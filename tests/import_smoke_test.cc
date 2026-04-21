@@ -471,7 +471,9 @@ static int run_header_reader_check(
     const char *msg_log_id,
     int expected_count,
     const char *expected_tag0,
-    const char *expected_tag1
+    const char *expected_body0_contains,
+    const char *expected_tag1,
+    const char *expected_body1_contains
 ) {
     mf_error_t err = mf_open_existing_db(db_path, 1);
     if (err != MF_OK) {
@@ -520,7 +522,8 @@ static int run_header_reader_check(
 
     if (std::string(hdr0.msg_log_id) != msg_log_id ||
         hdr0.ordinal != 1 ||
-        std::string(hdr0.tag) != expected_tag0) {
+        std::string(hdr0.tag) != expected_tag0 ||
+        std::string(hdr0.body).find(expected_body0_contains) == std::string::npos) {
         std::cerr << "unexpected first header for " << db_path
                   << " msg_log_id=" << msg_log_id
                   << ": " << hdr0.msg_log_id << "/" << hdr0.ordinal
@@ -529,9 +532,11 @@ static int run_header_reader_check(
         return 65;
     }
 
+
     if (std::string(hdr1.msg_log_id) != msg_log_id ||
         hdr1.ordinal != 2 ||
-        std::string(hdr1.tag) != expected_tag1) {
+        std::string(hdr1.tag) != expected_tag1 ||
+        std::string(hdr1.body).find(expected_body1_contains) == std::string::npos) {
         std::cerr << "unexpected second header for " << db_path
                   << " msg_log_id=" << msg_log_id
                   << ": " << hdr1.msg_log_id << "/" << hdr1.ordinal
@@ -771,7 +776,9 @@ int main() {
         "imp-1",
         8,
         "Return-path",
-        "Delivery-date"
+	"sender1@example.org",
+        "Delivery-date",
+	"Mon, 16 Mar 2026 17:29:07 +0100"
     );
     if (rc != 0) {
         return rc;
@@ -782,7 +789,9 @@ int main() {
         "imp-1",
         8,
         "Return-path",
-        "Delivery-date"
+        "sender1@example.org",
+        "Delivery-date",
+        "Mon, 16 Mar 2026 17:29:07 +0100"
     );
     if (rc != 0) {
         return rc;
@@ -793,7 +802,9 @@ int main() {
         "imp-1",
         8,
         "Return-path",
-        "Delivery-date"
+        "sender1@example.org",
+        "Delivery-date",
+        "Mon, 16 Mar 2026 17:29:07 +0100"
     );
     if (rc != 0) {
         return rc;
