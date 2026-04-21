@@ -203,7 +203,7 @@ mf_error_t mf_db_get_message_summary_at(
     std::memset(out_summary, 0, sizeof(*out_summary));
 
     const char *sql =
-        "SELECT msg_log_id, decision, final_score, subject "
+        "SELECT msg_log_id, decision, final_score, subject, date_hdr, created_at, from_addr "
         "FROM messages "
         "ORDER BY msg_log_id "
         "LIMIT 1 OFFSET ?;";
@@ -234,8 +234,23 @@ mf_error_t mf_db_get_message_summary_at(
             sizeof(out_summary->subject),
             sqlite3_column_text(stmt, 3)
         );
+        copy_sqlite_text(
+            out_summary->date_hdr,
+            sizeof(out_summary->date_hdr),
+            sqlite3_column_text(stmt, 4)
+        );
+        copy_sqlite_text(
+            out_summary->created_at,
+            sizeof(out_summary->created_at),
+            sqlite3_column_text(stmt, 5)
+        );
+        copy_sqlite_text(
+            out_summary->from_addr,
+            sizeof(out_summary->from_addr),
+            sqlite3_column_text(stmt, 6)
+        );
         err = MF_OK;
-    }
+    }    
 
     sqlite3_finalize(stmt);
     return err;

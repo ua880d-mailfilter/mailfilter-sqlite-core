@@ -74,6 +74,9 @@ typedef struct mf_message_summary_t {
     char decision[32];
     int final_score;
     char subject[512];
+    char date_hdr[128];
+    char created_at[32];
+    char from_addr[256];
 } mf_message_summary_t;
 
 typedef struct mf_header_entry_t {
