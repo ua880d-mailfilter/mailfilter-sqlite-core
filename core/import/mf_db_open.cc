@@ -261,6 +261,88 @@ mf_error_t mf_db_get_message_summary_at(
     return err;
 }
 
+// new 22.04.2026 ->
+
+mf_error_t mf_db_get_message_summary_by_id(
+    const char *msg_log_id,
+    mf_message_summary_t *out_summary
+)
+{
+    if (!g_external_db) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    if (!msg_log_id || !*msg_log_id || !out_summary) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    mf_error_t err = mf_db_validate_required_schema();
+    if (err != MF_OK) {
+        return err;
+    }
+
+    std::memset(out_summary, 0, sizeof(*out_summary));
+
+    const char *sql =
+        "SELECT msg_log_id, decision, final_score, subject, date_hdr, created_at, from_addr, to_addr "
+        "FROM messages "
+        "WHERE msg_log_id = ? "
+        "LIMIT 1;";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(g_external_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return MF_ERR_DB_OPEN;
+    }
+
+    sqlite3_bind_text(stmt, 1, msg_log_id, -1, SQLITE_STATIC);
+
+    err = MF_ERR_INVALID_ARG;
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        copy_sqlite_text(
+            out_summary->msg_log_id,
+            sizeof(out_summary->msg_log_id),
+            sqlite3_column_text(stmt, 0)
+        );
+        copy_sqlite_text(
+            out_summary->decision,
+            sizeof(out_summary->decision),
+            sqlite3_column_text(stmt, 1)
+        );
+        out_summary->final_score = sqlite3_column_int(stmt, 2);
+        copy_sqlite_text(
+            out_summary->subject,
+            sizeof(out_summary->subject),
+            sqlite3_column_text(stmt, 3)
+        );
+        copy_sqlite_text(
+            out_summary->date_hdr,
+            sizeof(out_summary->date_hdr),
+            sqlite3_column_text(stmt, 4)
+        );
+        copy_sqlite_text(
+            out_summary->created_at,
+            sizeof(out_summary->created_at),
+            sqlite3_column_text(stmt, 5)
+        );
+        copy_sqlite_text(
+            out_summary->from_addr,
+            sizeof(out_summary->from_addr),
+            sqlite3_column_text(stmt, 6)
+        );
+        copy_sqlite_text(
+            out_summary->to_addr,
+            sizeof(out_summary->to_addr),
+            sqlite3_column_text(stmt, 7)
+        );
+        err = MF_OK;
+    }
+
+    sqlite3_finalize(stmt);
+    return err;
+}
+// end new
+
 mf_error_t mf_db_get_header_count_for_message(
     const char *msg_log_id,
     int *out_count

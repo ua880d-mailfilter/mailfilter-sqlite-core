@@ -727,6 +727,22 @@ mf_error_t mf_get_message_summary_at(
     return mf_db_get_message_summary_at(index, out_summary);
 }
 
+// new 22.04.2026 ->
+
+mf_error_t mf_get_message_summary_by_id(
+    const char *msg_log_id,
+    mf_message_summary_t *out_summary
+)
+{
+    if (!g_initialized) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    return mf_db_get_message_summary_by_id(msg_log_id, out_summary);
+}
+
+// end new
+
 mf_error_t mf_get_header_count_for_message(
     const char *msg_log_id,
     int *out_count

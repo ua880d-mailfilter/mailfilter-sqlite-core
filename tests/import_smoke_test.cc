@@ -466,6 +466,65 @@ static int run_message_reader_check(
     return 0;
 }
 
+// new 22.04.2026
+static int run_message_by_id_check(
+    const char *db_path,
+    const char *msg_log_id,
+    const char *expected_decision,
+    int expected_score,
+    const char *expected_date_hdr,
+    const char *expected_from_addr,
+    const char *expected_to_addr
+) {
+    mf_error_t err = mf_open_existing_db(db_path, 1);
+    if (err != MF_OK) {
+        std::cerr << "mf_open_existing_db failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        return 80;
+    }
+
+    mf_message_summary_t msg{};
+    err = mf_get_message_summary_by_id(msg_log_id, &msg);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_message_summary_by_id failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 81;
+    }
+
+    if (std::string(msg.msg_log_id) != msg_log_id ||
+        std::string(msg.decision) != expected_decision ||
+        msg.final_score != expected_score ||
+        std::string(msg.date_hdr) != expected_date_hdr ||
+        std::string(msg.from_addr) != expected_from_addr ||
+        std::string(msg.to_addr) != expected_to_addr ||
+        std::string(msg.created_at).empty()) {
+        std::cerr << "unexpected message summary by id for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << msg.msg_log_id << "/" << msg.decision
+                  << "/" << msg.final_score << "/" << msg.date_hdr
+                  << "/" << msg.from_addr << "/" << msg.to_addr
+                  << "/" << msg.created_at << "\n";
+        mf_close_existing_db();
+        return 82;
+    }
+
+    std::cout << "READERBYID file=" << db_path
+              << " msg=" << msg.msg_log_id
+              << ":" << msg.decision
+              << ":" << msg.final_score
+              << ":" << msg.date_hdr
+              << ":" << msg.from_addr
+              << ":" << msg.to_addr
+              << "\n";
+
+    mf_close_existing_db();
+    return 0;
+}
+
+// end new
+
 static int run_header_reader_check(
     const char *db_path,
     const char *msg_log_id,
@@ -810,6 +869,48 @@ int main() {
     if (rc != 0) {
         return rc;
     }
+
+//
+    rc = run_message_by_id_check(
+        "build/test-import-score-lf.sqlite3",
+        "imp-1",
+        "pass",
+        50,
+        "Mon, 16 Mar 2026 17:29:07 +0100",
+        "\"Example Sender 1\" <sender1@example.org>",
+        "<user@example.org>"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_message_by_id_check(
+        "build/test-import-allowdeny-lf.sqlite3",
+        "imp-1",
+        "allow",
+        0,
+        "Mon, 16 Mar 2026 17:29:07 +0100",
+        "\"Example Sender 1\" <sender1@example.org>",
+        "<user@example.org>"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_message_by_id_check(
+        "build/test-import-score-crlf.sqlite3",
+        "imp-1",
+        "pass",
+        50,
+        "Mon, 16 Mar 2026 17:29:07 +0100",
+        "\"Example Sender 1\" <sender1@example.org>",
+        "<user@example.org>"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+// end new
 
     rc = run_header_reader_check(
         "build/test-import-score-lf.sqlite3",
