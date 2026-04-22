@@ -641,7 +641,7 @@ static int run_rule_hit_reader_check(
             << " expected="
             << msg_log_id << "/" << expected_phase0
             << "/" << expected_expr0 << "/" << expected_score_delta0
-            << "/" << expected_header_tag0 << "/" << expected_body0_contains
+            << "/" << expected_header_tag0 << "/" << expected_header_body0_contains
             << "/" << expected_matched0 << "/" << expected_is_negative0
             << "\n";
         mf_close_existing_db();
@@ -658,12 +658,20 @@ static int run_rule_hit_reader_check(
           std::string(hit1.header_body).find(expected_header_body1_contains) == std::string::npos ||
           hit1.matched != expected_matched1 ||
           hit1.is_negative != expected_is_negative1) {
-          std::cerr << "unexpected second rule_hit for " << db_path
-                    << " msg_log_id=" << msg_log_id
-                    << ": " << hit1.msg_log_id << "/" << hit1.phase
-                    << "/" << hit1.expression << "/" << hit1.score_delta
-                    << "/" << hit1.header_tag << "/" << hit1.header_body
-                    << "/" << hit1.matched << "/" << hit1.is_negative << "\n";
+
+    std::cerr << "unexpected second rule_hit for " << db_path
+              << " msg_log_id=" << msg_log_id
+              << ": actual="
+              << hit1.msg_log_id << "/" << hit1.phase
+              << "/" << hit1.expression << "/" << hit1.score_delta
+              << "/" << hit1.header_tag << "/" << hit1.header_body
+              << "/" << hit1.matched << "/" << hit1.is_negative
+              << " expected="
+              << msg_log_id << "/" << expected_phase1
+              << "/" << expected_expr1 << "/" << expected_score_delta1
+              << "/" << expected_header_tag1 << "/" << expected_header_body1_contains
+              << "/" << expected_matched1 << "/" << expected_is_negative1
+              << "\n";
           mf_close_existing_db();
           return 76;
       }
