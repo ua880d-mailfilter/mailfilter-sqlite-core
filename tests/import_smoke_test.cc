@@ -555,7 +555,7 @@ static int run_header_reader_check(
     mf_close_existing_db();
     return 0;
 }
-
+###
 static int run_rule_hit_reader_check(
     const char *db_path,
     const char *msg_log_id,
@@ -563,9 +563,17 @@ static int run_rule_hit_reader_check(
     const char *expected_phase0,
     const char *expected_expr0,
     int expected_score_delta0,
+    const char *expected_header_tag0,
+    const char *expected_header_body0_contains,
+    int expected_matched0,
+    int expected_is_negative0,
     const char *expected_phase1,
     const char *expected_expr1,
-    int expected_score_delta1
+    int expected_score_delta1,
+    const char *expected_header_tag1,
+    const char *expected_header_body1_contains,
+    int expected_matched1,
+    int expected_is_negative1
 ) {
     mf_error_t err = mf_open_existing_db(db_path, 1);
     if (err != MF_OK) {
@@ -617,35 +625,51 @@ static int run_rule_hit_reader_check(
     if (std::string(hit0.msg_log_id) != msg_log_id ||
         std::string(hit0.phase) != expected_phase0 ||
         std::string(hit0.expression) != expected_expr0 ||
-        hit0.score_delta != expected_score_delta0) {
+        hit0.score_delta != expected_score_delta0 ||
+        std::string(hit0.header_tag) != expected_header_tag0 ||
+        std::string(hit0.header_body).find(expected_header_body0_contains) == std::string::npos ||
+        hit0.matched != expected_matched0 ||
+        hit0.is_negative != expected_is_negative0) {
         std::cerr << "unexpected first rule_hit for " << db_path
                   << " msg_log_id=" << msg_log_id
                   << ": " << hit0.msg_log_id << "/" << hit0.phase
-                  << "/" << hit0.expression << "/" << hit0.score_delta << "\n";
+                  << "/" << hit0.expression << "/" << hit0.score_delta
+                  << "/" << hit0.header_tag << "/" << hit0.header_body
+                  << "/" << hit0.matched << "/" << hit0.is_negative << "\n";
         mf_close_existing_db();
         return 75;
     }
 
     if (expected_count > 1) {
-        if (std::string(hit1.msg_log_id) != msg_log_id ||
-            std::string(hit1.phase) != expected_phase1 ||
-            std::string(hit1.expression) != expected_expr1 ||
-            hit1.score_delta != expected_score_delta1) {
-            std::cerr << "unexpected second rule_hit for " << db_path
-                      << " msg_log_id=" << msg_log_id
-                      << ": " << hit1.msg_log_id << "/" << hit1.phase
-                      << "/" << hit1.expression << "/" << hit1.score_delta << "\n";
-            mf_close_existing_db();
-            return 76;
-        }
+
+      if (std::string(hit1.msg_log_id) != msg_log_id ||
+          std::string(hit1.phase) != expected_phase1 ||
+          std::string(hit1.expression) != expected_expr1 ||
+          hit1.score_delta != expected_score_delta1 ||
+          std::string(hit1.header_tag) != expected_header_tag1 ||
+          std::string(hit1.header_body).find(expected_header_body1_contains) == std::string::npos ||
+          hit1.matched != expected_matched1 ||
+          hit1.is_negative != expected_is_negative1) {
+          std::cerr << "unexpected second rule_hit for " << db_path
+                    << " msg_log_id=" << msg_log_id
+                    << ": " << hit1.msg_log_id << "/" << hit1.phase
+                    << "/" << hit1.expression << "/" << hit1.score_delta
+                    << "/" << hit1.header_tag << "/" << hit1.header_body
+                    << "/" << hit1.matched << "/" << hit1.is_negative << "\n";
+          mf_close_existing_db();
+          return 76;
+      }
+
     }
 
     std::cout << "RULEHITREADER file=" << db_path
               << " msg=" << msg_log_id
               << " count=" << count
-              << " hit0=" << hit0.phase << ":" << hit0.expression << ":" << hit0.score_delta;
+              << " hit0=" << hit0.phase << ":" << hit0.expression << ":" << hit0.score_delta
+              << ":" << hit0.header_tag << ":" << hit0.matched << ":" << hit0.is_negative;
     if (expected_count > 1) {
-        std::cout << " hit1=" << hit1.phase << ":" << hit1.expression << ":" << hit1.score_delta;
+        std::cout << " hit1=" << hit1.phase << ":" << hit1.expression << ":" << hit1.score_delta
+                  << ":" << hit1.header_tag << ":" << hit1.matched << ":" << hit1.is_negative;
     }
     std::cout << "\n";
 
@@ -815,19 +839,22 @@ int main() {
         "imp-1",
         3,
         "score", "^Received:", 50,
-        "score", "^From:", -1
+        "Received", "mx1.example.org", 1, 0,
+        "score", "^From:", -1,
+        "From", "sender1@example.org", 1, 1
     );
     if (rc != 0) {
         return rc;
     }
-
 
     rc = run_rule_hit_reader_check(
         "build/test-import-allowdeny-lf.sqlite3",
         "imp-1",
         1,
         "allow", "^Subject:.*Artemis", 0,
-        "allow", "^Subject:.*Artemis", 0
+        "Subject", "Artemis", 1, 0,
+        "allow", "^Subject:.*Artemis", 0,
+        "Subject", "Artemis", 1, 0
     );
     if (rc != 0) {
         return rc;
@@ -838,7 +865,9 @@ int main() {
         "imp-1",
         3,
         "score", "^Received:", 50,
-        "score", "^From:", -1
+        "Received", "mx1.example.org", 1, 0,
+        "score", "^From:", -1,
+        "From", "sender1@example.org", 1, 1
     );
     if (rc != 0) {
         return rc;
