@@ -630,12 +630,20 @@ static int run_rule_hit_reader_check(
         std::string(hit0.header_body).find(expected_header_body0_contains) == std::string::npos ||
         hit0.matched != expected_matched0 ||
         hit0.is_negative != expected_is_negative0) {
-        std::cerr << "unexpected first rule_hit for " << db_path
-                  << " msg_log_id=" << msg_log_id
-                  << ": " << hit0.msg_log_id << "/" << hit0.phase
-                  << "/" << hit0.expression << "/" << hit0.score_delta
-                  << "/" << hit0.header_tag << "/" << hit0.header_body
-                  << "/" << hit0.matched << "/" << hit0.is_negative << "\n";
+
+  std::cerr << "unexpected first rule_hit for " << db_path
+            << " msg_log_id=" << msg_log_id
+            << ": actual="
+            << hit0.msg_log_id << "/" << hit0.phase
+            << "/" << hit0.expression << "/" << hit0.score_delta
+            << "/" << hit0.header_tag << "/" << hit0.header_body
+            << "/" << hit0.matched << "/" << hit0.is_negative
+            << " expected="
+            << msg_log_id << "/" << expected_phase0
+            << "/" << expected_expr0 << "/" << expected_score_delta0
+            << "/" << expected_header_tag0 << "/" << expected_body0_contains
+            << "/" << expected_matched0 << "/" << expected_is_negative0
+            << "\n";
         mf_close_existing_db();
         return 75;
     }
