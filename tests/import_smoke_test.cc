@@ -752,6 +752,143 @@ static int run_rule_hit_reader_check(
     return 0;
 }
 
+// New 22.04.2026
+
+static int run_message_detail_check(
+    const char *db_path,
+    const char *msg_log_id,
+    const char *expected_decision,
+    int expected_score,
+    int expected_header_count,
+    int expected_rule_hit_count,
+    const char *expected_subject_contains,
+    const char *expected_header0_tag,
+    const char *expected_header0_body_contains,
+    const char *expected_rule_phase0,
+    const char *expected_rule_expr0
+) {
+    mf_error_t err = mf_open_existing_db(db_path, 1);
+    if (err != MF_OK) {
+        std::cerr << "mf_open_existing_db failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        return 90;
+    }
+
+    mf_message_summary_t msg{};
+    err = mf_get_message_summary_by_id(msg_log_id, &msg);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_message_summary_by_id failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 91;
+    }
+
+    if (std::string(msg.msg_log_id) != msg_log_id ||
+        std::string(msg.decision) != expected_decision ||
+        msg.final_score != expected_score ||
+        std::string(msg.subject).find(expected_subject_contains) == std::string::npos) {
+        std::cerr << "unexpected detail message for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << msg.msg_log_id << "/" << msg.decision
+                  << "/" << msg.final_score << "/" << msg.subject << "\n";
+        mf_close_existing_db();
+        return 92;
+    }
+
+    int header_count = 0;
+    err = mf_get_header_count_for_message(msg_log_id, &header_count);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_header_count_for_message failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 93;
+    }
+
+    if (header_count != expected_header_count) {
+        std::cerr << "unexpected detail header count for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << header_count << "\n";
+        mf_close_existing_db();
+        return 94;
+    }
+
+    mf_header_entry_t hdr0{};
+    err = mf_get_header_at(msg_log_id, 0, &hdr0);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_header_at(0) failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 95;
+    }
+
+    if (std::string(hdr0.msg_log_id) != msg_log_id ||
+        hdr0.ordinal != 1 ||
+        std::string(hdr0.tag) != expected_header0_tag ||
+        std::string(hdr0.body).find(expected_header0_body_contains) == std::string::npos) {
+        std::cerr << "unexpected detail first header for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << hdr0.msg_log_id << "/" << hdr0.ordinal
+                  << "/" << hdr0.tag << "/" << hdr0.body << "\n";
+        mf_close_existing_db();
+        return 96;
+    }
+
+    int rule_hit_count = 0;
+    err = mf_get_rule_hit_count_for_message(msg_log_id, &rule_hit_count);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_rule_hit_count_for_message failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 97;
+    }
+
+    if (rule_hit_count != expected_rule_hit_count) {
+        std::cerr << "unexpected detail rule_hit count for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << rule_hit_count << "\n";
+        mf_close_existing_db();
+        return 98;
+    }
+
+    mf_rule_hit_t hit0{};
+    err = mf_get_rule_hit_at(msg_log_id, 0, &hit0);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_rule_hit_at(0) failed for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 99;
+    }
+
+    if (std::string(hit0.msg_log_id) != msg_log_id ||
+        std::string(hit0.phase) != expected_rule_phase0 ||
+        std::string(hit0.expression) != expected_rule_expr0) {
+        std::cerr << "unexpected detail first rule_hit for " << db_path
+                  << " msg_log_id=" << msg_log_id
+                  << ": " << hit0.msg_log_id << "/" << hit0.phase
+                  << "/" << hit0.expression << "\n";
+        mf_close_existing_db();
+        return 100;
+    }
+
+    std::cout << "DETAILCHECK file=" << db_path
+              << " msg=" << msg.msg_log_id
+              << ":" << msg.decision
+              << ":" << msg.final_score
+              << " headers=" << header_count
+              << " first_header=" << hdr0.tag
+              << " rule_hits=" << rule_hit_count
+              << " first_rule=" << hit0.phase << ":" << hit0.expression
+              << "\n";
+
+    mf_close_existing_db();
+    return 0;
+}
+
 // Ende Reader-Check
 
 int main() {
@@ -905,6 +1042,57 @@ int main() {
         "Mon, 16 Mar 2026 17:29:07 +0100",
         "\"Example Sender 1\" <sender1@example.org>",
         "<user@example.org>"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_message_detail_check(
+        "build/test-import-score-lf.sqlite3",
+        "imp-1",
+        "pass",
+        50,
+        8,
+        3,
+        "Artemis mission update",
+        "Return-path",
+        "sender1@example.org",
+        "score",
+        "^Received:"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_message_detail_check(
+        "build/test-import-allowdeny-lf.sqlite3",
+        "imp-1",
+        "allow",
+        0,
+        8,
+        1,
+        "Artemis mission update",
+        "Return-path",
+        "sender1@example.org",
+        "allow",
+        "^Subject:.*Artemis"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_message_detail_check(
+        "build/test-import-score-crlf.sqlite3",
+        "imp-1",
+        "pass",
+        50,
+        8,
+        3,
+        "Artemis mission update",
+        "Return-path",
+        "sender1@example.org",
+        "score",
+        "^Received:"
     );
     if (rc != 0) {
         return rc;
