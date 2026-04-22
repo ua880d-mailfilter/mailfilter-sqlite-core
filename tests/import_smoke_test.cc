@@ -555,7 +555,7 @@ static int run_header_reader_check(
     mf_close_existing_db();
     return 0;
 }
-###
+
 static int run_rule_hit_reader_check(
     const char *db_path,
     const char *msg_log_id,
