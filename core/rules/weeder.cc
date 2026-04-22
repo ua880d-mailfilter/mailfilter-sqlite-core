@@ -709,9 +709,9 @@ int Weeder :: check_scores (Header* the_header)
                   hit.score_delta = cur_score->score ();
                   hit.is_negative = (cur_score->score () < 0) ? 1 : 0;
                   hit.matched = 1;
-                  hit.header_tag = "";
-                  hit.header_body = "";
-                  hit.normalized_subject = 0;
+                  hit.header_tag = cur_entry->tag;
+                  hit.header_body = cur_entry->body;
+                  hit.normalized_subject = normalised_match ? 1 : 0;
                   last_score_hits.push_back (hit);
 	         // ##
 	          logger->print_msg ("Score: \""
@@ -781,8 +781,8 @@ int Weeder :: check_scores (Header* the_header)
                   hit.score_delta = cur_score->score ();
                   hit.is_negative = (cur_score->score () < 0) ? 1 : 0;
                   hit.matched = 1;
-                  hit.header_tag = "";
-                  hit.header_body = "";
+                  hit.header_tag = cur_entry->tag;
+                  hit.header_body = cur_entry->body;
                   hit.normalized_subject = 0;
                   last_score_hits.push_back (hit);
 		 // ###

@@ -855,9 +855,9 @@ int main() {
         "imp-1",
         3,
         "score", "^Received:", 50,
-        "", "", 1, 0,
+        "Received", "mx1.example.org", 1, 0,
         "score", "^From:", -1,
-        "", "", 1, 1
+        "From", "sender1@example.org", 1, 1
     );
     if (rc != 0) {
         return rc;
@@ -881,9 +881,9 @@ int main() {
         "imp-1",
         3,
         "score", "^Received:", 50,
-        "", "", 1, 0,
+        "Received", "mx1.example.org", 1, 0,
         "score", "^From:", -1,
-        "", "", 1, 1
+        "From", "sender1@example.org", 1, 1
     );
     if (rc != 0) {
         return rc;
