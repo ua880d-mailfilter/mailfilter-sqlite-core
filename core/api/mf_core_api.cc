@@ -793,6 +793,27 @@ mf_error_t mf_get_rule_hit_at(
     return mf_db_get_rule_hit_at(msg_log_id, index, out_hit);
 }
 
+mf_error_t mf_get_rule_hit_expression_agg_count(int *out_count)
+{
+    if (!g_initialized) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    return mf_db_get_rule_hit_expression_agg_count(out_count);
+}
+
+mf_error_t mf_get_rule_hit_expression_agg_at(
+    int index,
+    mf_rule_hit_agg_t *out_agg
+)
+{
+    if (!g_initialized) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    return mf_db_get_rule_hit_expression_agg_at(index, out_agg);
+}
+
 // Ende Open Wrapper
 
 void mf_shutdown(void) {

@@ -94,10 +94,16 @@ typedef struct mf_rule_hit_t {
     int is_negative;
     int matched;
     char header_tag[128];
-    char header_body[2048];
+    char header_body[4096];
     int normalized_subject;
     int score_delta;
 } mf_rule_hit_t;
+
+typedef struct mf_rule_hit_agg_t {
+    char expression[512];
+    int hit_count;
+} mf_rule_hit_agg_t;
+
 
 #ifdef __cplusplus
 }

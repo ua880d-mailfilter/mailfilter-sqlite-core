@@ -889,6 +889,81 @@ static int run_message_detail_check(
     return 0;
 }
 
+static int run_rule_hit_expression_agg_check(
+    const char *db_path,
+    int expected_count,
+    const char *expected_expr0,
+    int expected_hit_count0,
+    const char *expected_expr1,
+    int expected_hit_count1
+) {
+    mf_error_t err = mf_open_existing_db(db_path, 1);
+    if (err != MF_OK) {
+        std::cerr << "mf_open_existing_db failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        return 110;
+    }
+
+    int count = 0;
+    err = mf_get_rule_hit_expression_agg_count(&count);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_rule_hit_expression_agg_count failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 111;
+    }
+
+    if (count != expected_count) {
+        std::cerr << "unexpected rule_hit expression agg count for " << db_path
+                  << ": " << count << "\n";
+        mf_close_existing_db();
+        return 112;
+    }
+
+    mf_rule_hit_agg_t agg0{};
+    err = mf_get_rule_hit_expression_agg_at(0, &agg0);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_rule_hit_expression_agg_at(0) failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 113;
+    }
+
+    if (std::string(agg0.expression) != expected_expr0 ||
+        agg0.hit_count != expected_hit_count0) {
+        std::cerr << "unexpected first rule_hit expression agg for " << db_path
+                  << ": " << agg0.expression << "/" << agg0.hit_count << "\n";
+        mf_close_existing_db();
+        return 114;
+    }
+
+    mf_rule_hit_agg_t agg1{};
+    err = mf_get_rule_hit_expression_agg_at(1, &agg1);
+    if (err != MF_OK) {
+        std::cerr << "mf_get_rule_hit_expression_agg_at(1) failed for " << db_path
+                  << ": " << mf_error_string(err) << "\n";
+        mf_close_existing_db();
+        return 115;
+    }
+
+    if (std::string(agg1.expression) != expected_expr1 ||
+        agg1.hit_count != expected_hit_count1) {
+        std::cerr << "unexpected second rule_hit expression agg for " << db_path
+                  << ": " << agg1.expression << "/" << agg1.hit_count << "\n";
+        mf_close_existing_db();
+        return 116;
+    }
+
+    std::cout << "RULEHITAGG file=" << db_path
+              << " count=" << count
+              << " agg0=" << agg0.expression << ":" << agg0.hit_count
+              << " agg1=" << agg1.expression << ":" << agg1.hit_count
+              << "\n";
+
+    mf_close_existing_db();
+    return 0;
+}
+
 // Ende Reader-Check
 
 int main() {
@@ -1093,6 +1168,36 @@ int main() {
         "sender1@example.org",
         "score",
         "^Received:"
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_rule_hit_expression_agg_check(
+        "build/test-import-score-lf.sqlite3",
+        3,
+        "^From:", 2,
+        "^Received:", 2
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_rule_hit_expression_agg_check(
+        "build/test-import-allowdeny-lf.sqlite3",
+        2,
+        "^Subject:.*Artemis", 1,
+        "^Subject:.*Comes", 1
+    );
+    if (rc != 0) {
+        return rc;
+    }
+
+    rc = run_rule_hit_expression_agg_check(
+        "build/test-import-score-crlf.sqlite3",
+        3,
+        "^From:", 2,
+        "^Received:", 2
     );
     if (rc != 0) {
         return rc;

@@ -560,3 +560,93 @@ mf_error_t mf_db_get_rule_hit_at(
     sqlite3_finalize(stmt);
     return err;
 }
+
+mf_error_t mf_db_get_rule_hit_expression_agg_count(int *out_count)
+{
+    if (!g_external_db) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    if (!out_count) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    mf_error_t err = mf_db_validate_required_schema();
+    if (err != MF_OK) {
+        return err;
+    }
+
+    const char *sql =
+        "SELECT COUNT(*) "
+        "FROM ("
+        "  SELECT expression "
+        "  FROM rule_hits "
+        "  WHERE matched = 1 "
+        "  GROUP BY expression"
+        ");";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(g_external_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return MF_ERR_DB_OPEN;
+    }
+
+    err = MF_ERR_DB_OPEN;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        *out_count = sqlite3_column_int(stmt, 0);
+        err = MF_OK;
+    }
+
+    sqlite3_finalize(stmt);
+    return err;
+}
+
+mf_error_t mf_db_get_rule_hit_expression_agg_at(
+    int index,
+    mf_rule_hit_agg_t *out_agg
+)
+{
+    if (!g_external_db) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    if (!out_agg || index < 0) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    mf_error_t err = mf_db_validate_required_schema();
+    if (err != MF_OK) {
+        return err;
+    }
+
+    std::memset(out_agg, 0, sizeof(*out_agg));
+
+    const char *sql =
+        "SELECT expression, COUNT(*) AS hit_count "
+        "FROM rule_hits "
+        "WHERE matched = 1 "
+        "GROUP BY expression "
+        "ORDER BY hit_count DESC, expression ASC "
+        "LIMIT 1 OFFSET ?;";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(g_external_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return MF_ERR_DB_OPEN;
+    }
+
+    sqlite3_bind_int(stmt, 1, index);
+
+    err = MF_ERR_INVALID_ARG;
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        copy_sqlite_text(
+            out_agg->expression,
+            sizeof(out_agg->expression),
+            sqlite3_column_text(stmt, 0)
+        );
+        out_agg->hit_count = sqlite3_column_int(stmt, 1);
+        err = MF_OK;
+    }
+
+    sqlite3_finalize(stmt);
+    return err;
+}

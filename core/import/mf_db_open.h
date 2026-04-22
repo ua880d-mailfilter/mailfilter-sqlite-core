@@ -52,6 +52,13 @@ mf_error_t mf_db_get_rule_hit_at(
     mf_rule_hit_t *out_hit
 );
 
+mf_error_t mf_db_get_rule_hit_expression_agg_count(int *out_count);
+
+mf_error_t mf_db_get_rule_hit_expression_agg_at(
+    int index,
+    mf_rule_hit_agg_t *out_agg
+);
+
 // Ende DB Read
 
 #endif
