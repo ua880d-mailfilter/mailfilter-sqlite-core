@@ -161,6 +161,11 @@ static int run_existing_db_header_check(
 int main()
 {
     mf_config_t cfg{};
+    cfg.db_path = "tests/data/mailheader-test.sqlite3";
+    cfg.rc_path = "tests/data/test-score.rc";
+    cfg.policy_dir = ".";
+    cfg.app_id = "existing-db-smoke-test";
+    cfg.device_id = "ci";
 
     mf_error_t err = mf_init(&cfg);
     if (err != MF_OK) {
