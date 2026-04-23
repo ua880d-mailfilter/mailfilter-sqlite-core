@@ -836,6 +836,27 @@ mf_error_t mf_get_rule_hit_expression_tag_agg_at(
     return mf_db_get_rule_hit_expression_tag_agg_at(index, out_agg);
 }
 
+mf_error_t mf_get_header_tag_agg_count(int *out_count)
+{
+    if (!g_initialized) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    return mf_db_get_header_tag_agg_count(out_count);
+}
+
+mf_error_t mf_get_header_tag_agg_at(
+    int index,
+    mf_header_tag_agg_t *out_agg
+)
+{
+    if (!g_initialized) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    return mf_db_get_header_tag_agg_at(index, out_agg);
+}
+
 // Ende Open Wrapper
 
 void mf_shutdown(void) {

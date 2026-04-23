@@ -219,3 +219,74 @@ This milestone does **not** implement that layer yet, but the richer `rule_hits`
 - CI-verified incremental growth
 
 into a **portable analysis and reader core** that is meaningfully closer to the real analytical depth of `mailfilter-sqlite`.
+
+## Test Layers
+
+`mailfilter-sqlite-core` currently uses two complementary smoke-test paths.
+
+### 1. `import_smoke_test.cc`
+This is the deterministic core processing test.
+
+It verifies:
+
+- sequential `mailheader.log` import
+- LF / CRLF handling
+- rule application from `mailfilterrc`
+- persistence of:
+  - `messages`
+  - `header_entries`
+  - `rule_hits`
+- message readers
+- header readers
+- rule-hit readers
+- integrated detail lookup by `msg_log_id`
+- first rule-hit aggregations:
+  - by `expression`
+  - by `expression + header_tag`
+  - including `actual_matches`
+  - including `avg_score_impact`
+
+This test exercises the real core analysis path.
+
+### 2. `existing_db_smoke_test.cc`
+This is the fixture-based existing database smoke test.
+
+It uses a prebuilt SQLite test database:
+
+- `tests/data/mailheader-test.sqlite3`
+
+This database was generated from artificial `.eml` inputs and is intended as a stable read fixture.
+
+It verifies:
+
+- opening an existing SQLite database
+- schema / count consistency
+- message reading by `msg_log_id`
+- header reading by `msg_log_id`
+- pass / deny fixture consistency
+
+Important:
+This fixture currently contains:
+
+- `messages`
+- `header_entries`
+
+but no populated `rule_hits`.
+
+Therefore this test intentionally focuses on:
+
+- existing DB reuse
+- reader stability
+- message/header consistency
+
+and does **not** enforce rule-hit or aggregation expectations.
+
+### Why both tests exist
+
+The two tests serve different roles:
+
+- `import_smoke_test.cc` validates the active core parsing / analysis / persistence path
+- `existing_db_smoke_test.cc` validates stable reuse of already existing SQLite databases
+
+Together they provide a cleaner and more realistic test split for the evolving core.
+

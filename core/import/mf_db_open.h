@@ -66,6 +66,13 @@ mf_error_t mf_db_get_rule_hit_expression_tag_agg_at(
     mf_rule_hit_tag_agg_t *out_agg
 );
 
+mf_error_t mf_db_get_header_tag_agg_count(int *out_count);
+
+mf_error_t mf_db_get_header_tag_agg_at(
+    int index,
+    mf_header_tag_agg_t *out_agg
+);
+
 // Ende DB Read
 
 #endif

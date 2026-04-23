@@ -112,6 +112,12 @@ typedef struct mf_rule_hit_tag_agg_t {
     double avg_score_impact;
 } mf_rule_hit_tag_agg_t;
 
+
+typedef struct mf_header_tag_agg_t {
+    char header_tag[128];
+    int message_count;
+} mf_header_tag_agg_t;
+
 #ifdef __cplusplus
 }
 #endif

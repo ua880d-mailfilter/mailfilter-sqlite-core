@@ -749,3 +749,96 @@ mf_error_t mf_db_get_rule_hit_expression_tag_agg_at(
     sqlite3_finalize(stmt);
     return err;
 }
+
+mf_error_t mf_db_get_header_tag_agg_count(int *out_count)
+{
+    if (!g_external_db) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    if (!out_count) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    mf_error_t err = mf_db_validate_required_schema();
+    if (err != MF_OK) {
+        return err;
+    }
+
+    const char *sql =
+        "SELECT COUNT(*) "
+        "FROM ("
+        "  SELECT he.tag "
+        "  FROM header_entries he "
+        "  JOIN messages m ON he.msg_log_id = m.msg_log_id "
+        "    AND m.decision IN ('pass', 'score') "
+        "  GROUP BY he.tag"
+        ");";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(g_external_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return MF_ERR_DB_OPEN;
+    }
+
+    err = MF_ERR_DB_OPEN;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        *out_count = sqlite3_column_int(stmt, 0);
+        err = MF_OK;
+    }
+
+    sqlite3_finalize(stmt);
+    return err;
+}
+
+mf_error_t mf_db_get_header_tag_agg_at(
+    int index,
+    mf_header_tag_agg_t *out_agg
+)
+{
+    if (!g_external_db) {
+        return MF_ERR_NOT_INITIALIZED;
+    }
+
+    if (!out_agg || index < 0) {
+        return MF_ERR_INVALID_ARG;
+    }
+
+    mf_error_t err = mf_db_validate_required_schema();
+    if (err != MF_OK) {
+        return err;
+    }
+
+    std::memset(out_agg, 0, sizeof(*out_agg));
+
+    const char *sql =
+        "SELECT he.tag AS header_tag, "
+        "COUNT(DISTINCT he.msg_log_id) AS message_count "
+        "FROM header_entries he "
+        "JOIN messages m ON he.msg_log_id = m.msg_log_id "
+        "  AND m.decision IN ('pass', 'score') "
+        "GROUP BY he.tag "
+        "ORDER BY message_count DESC, header_tag ASC "
+        "LIMIT 1 OFFSET ?;";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(g_external_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return MF_ERR_DB_OPEN;
+    }
+
+    sqlite3_bind_int(stmt, 1, index);
+
+    err = MF_ERR_INVALID_ARG;
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        copy_sqlite_text(
+            out_agg->header_tag,
+            sizeof(out_agg->header_tag),
+            sqlite3_column_text(stmt, 0)
+        );
+        out_agg->message_count = sqlite3_column_int(stmt, 1);
+        err = MF_OK;
+    }
+
+    sqlite3_finalize(stmt);
+    return err;
+}
