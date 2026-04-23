@@ -128,3 +128,27 @@ target_link_libraries(import_smoke_test
         mailfilter_sqlite_core
         sqlite3
 )
+
+add_executable(existing_db_smoke_test
+    tests/existing_db_smoke_test.cc
+)
+
+target_include_directories(existing_db_smoke_test
+    PRIVATE
+        ${MF_INCLUDE_DIR}
+        ${MF_COMPAT_DIR}
+        ${MF_CORE_DIR}
+        ${MF_CORE_DIR}/api
+        ${MF_CORE_DIR}/db
+        ${MF_CORE_DIR}/header
+        ${MF_CORE_DIR}/rules
+        ${MF_CORE_DIR}/config
+        ${MF_CORE_DIR}/parser
+        ${MF_CORE_DIR}/import
+)
+
+target_link_libraries(existing_db_smoke_test
+    PRIVATE
+        mailfilter_sqlite_core
+        sqlite3
+)
