@@ -161,7 +161,6 @@ static int run_existing_db_header_check(
 int main()
 {
     mf_config_t cfg{};
-    cfg.app_name = "existing-db-smoke-test";
 
     mf_error_t err = mf_init(&cfg);
     if (err != MF_OK) {
