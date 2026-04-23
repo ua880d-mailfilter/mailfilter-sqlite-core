@@ -711,7 +711,6 @@ mf_error_t mf_db_get_rule_hit_expression_tag_agg_at(
     std::memset(out_agg, 0, sizeof(*out_agg));
 
     const char *sql =
-          const char *sql =
             "SELECT expression, header_tag, COUNT(*) AS hit_count, "
             "SUM(CASE WHEN matched THEN 1 ELSE 0 END) AS actual_matches, "
             "AVG(score_delta) AS avg_score_impact "
