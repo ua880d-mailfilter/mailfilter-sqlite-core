@@ -25,6 +25,14 @@
 #include "config.h"
 #endif
 
+#ifndef PACKAGE_NAME
+#define PACKAGE_NAME "mailfilter-sqlite-core"
+#endif
+
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "0.1.0"
+#endif
+
 using namespace std;
 
 // Mailfilter's command line options and arguments.

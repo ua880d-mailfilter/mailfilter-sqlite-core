@@ -23,12 +23,10 @@
 #include <fstream>
 #include <vector>
 #include <stdexcept>
-#include <cstdio>
+//#include <cstdio>
 #include "preferences.hh"
 #include "filter.hh"
 #include "mailfilter.hh"
-#include "account.hh"
-#include "protocol.hh"
 #include "score.hh"
 #include "rcfile.hh"
 
@@ -87,13 +85,19 @@ void Preferences :: init (void)
   size_score.score = 0;
   size_score.size = 0;
 }
-  
+
 void Preferences :: kill (void)
 {
-  vector<Account> :: iterator die_account = (Preferences :: accnts).begin ();
-  while (die_account != (Preferences :: accnts).end ())
-    { die_account->clear (); die_account++; }
+  allows.clear();
+  denies.clear();
+  scores.clear();
+
+  if (prefs_stream.is_open ())
+    prefs_stream.close ();
+
+  prefs_stream.clear ();
 }
+  
 
 void Preferences :: set_ignore_time_stamp(bool new_ts)
 {
@@ -111,30 +115,19 @@ bool Preferences :: ignore_time_stamp()
     
 bool Preferences :: open (const char* name)
 {
-  prefs_file_name = name;
+  if (prefs_stream.is_open ())
+    prefs_stream.close ();
+
+  prefs_stream.clear ();
+
+  if (name && *name)
+    prefs_file_name = name;
 
   if (!prefs_file_name.length ())
-    {
-      char* home_env;
+    return false;
 
-      if ((home_env = getenv ("HOME")))
-	{
-	  string home_dir = home_env;
-	  prefs_file_name = home_dir + (string)RC_FILE_NAME;
-	  prefs_stream.open (prefs_file_name.c_str ());
+  prefs_stream.open (prefs_file_name.c_str ());
 
-	  // Windoze people have trouble with the leading dot so
-	  // here's an extra check, in case .mailfilterrc can't be
-	  // located in the user's home directory.
-	  if (!prefs_stream.is_open ())
-	    prefs_file_name = home_dir + (string)RC_FILE_NAME_WIN;
-	}
-      else
-	return false;
-    }
-  else
-    prefs_stream.open (prefs_file_name.c_str ());
-    
   if (!prefs_stream.is_open ())
     return false;
 
@@ -144,7 +137,7 @@ bool Preferences :: open (const char* name)
 // This function loads the user's preferences file which is specified
 // in prefs_file.  This string, containing the path, must not be empty
 // at this point.
-
+/*
 bool Preferences :: load (void)
 {
   if (!prefs_stream.is_open ())
@@ -156,14 +149,98 @@ bool Preferences :: load (void)
       rcparser.parse();
     }
   catch (...) { throw; }
-  
+
+//Anfang alle Regeln kompilieren
+  for (auto &f : allows) {
+    if (f.compile() != 0) {
+      ERROR_MSG("Failed to compile allow rule regex: `" + f.expression() + "'.");
+      return false;
+    }
+  }
+
+  for (auto &f : denies) {
+    if (f.compile() != 0) {
+      ERROR_MSG("Failed to compile deny rule regex: `" + f.expression() + "'.");
+      return false;
+    }
+  }
+
+  for (auto &s : scores) {
+    if (s.compile() != 0) {
+      ERROR_MSG("Failed to compile score rule regex: `" + s.expression() + "'.");
+      return false;
+    }
+  }
+//Ende
+
   return true;
 }
+*/
+
+
+// Anfang mit Debug
+
+bool Preferences :: load (void)
+{
+  if (!prefs_stream.is_open ())
+    return false;
+
+  try
+    {
+      RCParser rcparser(&prefs_stream);
+      rcparser.parse();
+/*
+      std::fprintf(stderr,
+                   "DEBUG prefs: parse rc=%d allows=%zu denies=%zu scores=%zu\n",
+                   allows.size(),
+                   denies.size(),
+                   scores.size());
+*/
+    }
+  catch (...) { throw; }
+
+  for (auto &f : allows)
+    {
+      if (f.compile () != 0)
+        {
+          ERROR_MSG("Failed to compile allow rule regex: `" + f.expression () + "'.");
+          return false;
+        }
+    }
+
+  for (auto &f : denies)
+    {
+      if (f.compile () != 0)
+        {
+          ERROR_MSG("Failed to compile deny rule regex: `" + f.expression () + "'.");
+          return false;
+        }
+    }
+
+  for (auto &s : scores)
+    {
+      if (s.compile () != 0)
+        {
+          ERROR_MSG("Failed to compile score rule regex: `" + s.expression () + "'.");
+          return false;
+        }
+    }
+
+  return true;
+}
+// Ende inkl. Debug
 
 void Preferences :: add_deny_rule (const char* keyword,
 				   const char* operat,
 				   const char* id)
 {
+/* Debug
+    std::fprintf(stderr,
+             "DEBUG prefs: add_deny_rule keyword=%s oper=%s expr=%s\n",
+             keyword ? keyword : "(null)",
+             operat ? operat : "(null)",
+             id ? id : "(null)");
+*/  
   Filter cur_filter;
 
   if (strcmp (operat, "=") == 0)
@@ -190,6 +267,14 @@ void Preferences :: add_allow_rule (const char* keyword,
 				    const char* operat,
 				    const char* id)
 {
+/* Debug
+    std::fprintf(stderr,
+             "DEBUG prefs: add_allow_rule keyword=%s oper=%s expr=%s\n",
+             keyword ? keyword : "(null)",
+             operat ? operat : "(null)",
+             id ? id : "(null)");
+*/
+
   Filter cur_filter;
 
   if (strcmp (operat, "=") == 0)
@@ -208,7 +293,7 @@ void Preferences :: add_allow_rule (const char* keyword,
     cur_filter.set_case (CASE_INSENSITIVE);
   else
     cur_filter.set_case (default_case ());
-    
+
   allows.push_back (cur_filter);
 }
 
@@ -346,83 +431,18 @@ void Preferences :: set_reg_type (const char* new_type)
 int Preferences :: reg_type (void)
 { return rreg_type; }
 
-void Preferences :: set_server (const char* server)
-{ cur_account.set_server (server); }
-
-void Preferences :: set_usr (const char* user)
-{ cur_account.set_usr (user); }
-
-void Preferences :: set_passwd (const char* pass)
-{ cur_account.set_passwd (pass); }
-
-void Preferences :: set_protocol (const char* prot)
-{
-  try
-    {
-      if (cmp_no_case (prot, "POP3") == 0)
-	cur_account.set_protocol (PROTOCOL_POP3);
-      else if (cmp_no_case (prot, "APOP") == 0)
-	cur_account.set_protocol (PROTOCOL_APOP);
-#ifdef USE_SSL
-      else if (cmp_no_case (prot, "POP3/SSL") == 0)
-	cur_account.set_protocol (PROTOCOL_POP3 | SSL_C);
-      else if (cmp_no_case (prot, "APOP/SSL") == 0)
-	cur_account.set_protocol (PROTOCOL_APOP | SSL_C);
-#endif
-      else
-	{
-	  ERROR_MSG ((string)"Only supported protocols are POP3 and "
-		     + (string)"APOP (SSL only if OpenSSL is available).");
-	  exit (-1);
-	}
-    }
-  catch (const exception& r_err)
-    {
-      // Most likely an error is the result of insufficient memory;
-      // set_protocol tries to reserve space for a protocol object.
-      //
-      // The error cannot be passed on here, cause it would have to
-      // pass the parser which is not exception-save.  (Maybe, this
-      // can be fixed in the future?)
-      ERROR_MSG (r_err.what ());
-      exit (-1);
-    }
-}
-
-// This function is pretty much a dummy wrapper.  See comments
-// inside account.cc for further information about it.
-
-void Preferences :: set_connection (unsigned int p)
-{ 
-  try
-    {
-      cur_account.set_connection ();
-    }
-  catch (const exception& r_err)
-    {
-      ERROR_MSG (r_err.what ());
-      exit (-1);
-    }
-}
-  
-void Preferences :: set_port (unsigned int p)
-{
-  // Port is the last instruction in the server-defining block from
-  // the rcfile, hence, we have to push the current server data onto
-  // the stack of stored accounts.
-  // TODO: shift this functionality into the rcfile parser!
-  cur_account.set_port (p);
-  accnts.push_back (cur_account);
-}
+void Preferences :: set_server (const char*) {}
+void Preferences :: set_usr (const char*) {}
+void Preferences :: set_passwd (const char*) {}
+void Preferences :: set_protocol (const char*) {}
+void Preferences :: set_connection (unsigned int) {}
+void Preferences :: set_port (unsigned int) {}
 
 bool Preferences :: delete_duplicates (void)
 {  return del_duplicates; }
 
 void Preferences :: set_del_duplicates (const char* del)
 { del_duplicates = (cmp_no_case (del, "yes") == 0 ? true : false); }
-
-vector<Account>* Preferences :: accounts (void)
-{ return &accnts; }
 
 vector<Filter>* Preferences :: allow_filters (void)
 { return &allows; }

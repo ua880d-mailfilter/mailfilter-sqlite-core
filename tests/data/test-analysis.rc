@@ -1,0 +1,13 @@
+# minimal analysis rc for smoke test
+
+REG_CASE="no"
+REG_TYPE="extended"
+MAXLENGTH=2998
+NORMAL="yes"
+HIGHSCORE=100
+
+SCORE -1="^From:"
+SCORE +1="^To:"
+SCORE +50="^Received:"
+
+#DENY="^X-Test-Deny:"

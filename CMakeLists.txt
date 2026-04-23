@@ -14,9 +14,17 @@ add_compile_options(
     -Wno-missing-field-initializers
 )
 
+
+
+option(MF_ENABLE_ASAN "Enable AddressSanitizer for debug-style CI runs" OFF)
 option(MF_ENABLE_ANDROID_LOG "Use Android logcat logging backend" ON)
 option(MF_ENABLE_EXPLANATIONS "Enable explanation JSON generation" ON)
 option(MF_ENABLE_ADDITIVE_TABLES "Allow additive Android-only tables" ON)
+
+if(MF_ENABLE_ASAN)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address)
+endif()
 
 set(MF_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(MF_COMPAT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/compat)
@@ -32,9 +40,17 @@ set(MF_CORE_SOURCES
     ${MF_COMPAT_DIR}/mf_paths.cc
     ${MF_CORE_DIR}/db/dblog.cc
     ${MF_CORE_DIR}/header/header.cc
-    ${MF_CORE_DIR}/config/account.cc
     ${MF_CORE_DIR}/rules/filter.cc
     ${MF_CORE_DIR}/rules/score.cc
+    ${MF_CORE_DIR}/parser/rcfile.cc
+    ${MF_CORE_DIR}/parser/rcparser.cc
+    ${MF_CORE_DIR}/header/rfc822.cc
+    ${MF_CORE_DIR}/header/rfc822parser.cc
+    ${MF_CORE_DIR}/rules/weeder.cc
+    ${MF_CORE_DIR}/import/mf_header_db_import.cc
+    ${MF_CORE_DIR}/config/preferences.cc
+    ${MF_COMPAT_DIR}/legacy_utils.cc
+    ${MF_CORE_DIR}/import/mf_header_parse_utils.cc
 )
 
 add_library(mailfilter_sqlite_core SHARED ${MF_CORE_SOURCES})
@@ -86,4 +102,53 @@ endif()
 
 set_target_properties(mailfilter_sqlite_core PROPERTIES
     OUTPUT_NAME "mailfilter_sqlite_core"
+)
+
+
+add_executable(import_smoke_test
+    tests/import_smoke_test.cc
+)
+
+target_include_directories(import_smoke_test
+    PRIVATE
+        ${MF_INCLUDE_DIR}
+        ${MF_COMPAT_DIR}
+        ${MF_CORE_DIR}
+        ${MF_CORE_DIR}/api
+        ${MF_CORE_DIR}/db
+        ${MF_CORE_DIR}/header
+        ${MF_CORE_DIR}/rules
+        ${MF_CORE_DIR}/config
+        ${MF_CORE_DIR}/parser
+        ${MF_CORE_DIR}/import
+)
+
+target_link_libraries(import_smoke_test
+    PRIVATE
+        mailfilter_sqlite_core
+        sqlite3
+)
+
+add_executable(existing_db_smoke_test
+    tests/existing_db_smoke_test.cc
+)
+
+target_include_directories(existing_db_smoke_test
+    PRIVATE
+        ${MF_INCLUDE_DIR}
+        ${MF_COMPAT_DIR}
+        ${MF_CORE_DIR}
+        ${MF_CORE_DIR}/api
+        ${MF_CORE_DIR}/db
+        ${MF_CORE_DIR}/header
+        ${MF_CORE_DIR}/rules
+        ${MF_CORE_DIR}/config
+        ${MF_CORE_DIR}/parser
+        ${MF_CORE_DIR}/import
+)
+
+target_link_libraries(existing_db_smoke_test
+    PRIVATE
+        mailfilter_sqlite_core
+        sqlite3
 )

@@ -16,10 +16,12 @@ jobs:
       - name: Build-Werkzeuge installieren
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential pkg-config libsqlite3-dev
+          sudo apt-get install -y cmake ninja-build build-essential pkg-config flex bison libfl-dev libsqlite3-dev
 
-      - name: Build-Verzeichnis anlegen
-        run: cmake -S . -B build -G Ninja
+      - name: Build-Verzeichnis neu erzeugen
+        run: |
+          rm -rf build
+          cmake -S . -B build -G Ninja -DMF_ENABLE_ASAN=ON
 
       - name: Core bauen
         run: cmake --build build --verbose
@@ -30,3 +32,65 @@ jobs:
           name: core-build-linux
           path: |
             build
+
+      - name: Create CRLF variant of sample mailheader log
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          src = Path("tests/data/sample-mailheader.log")
+          dst = Path("build/sample-mailheader-crlf.log")
+          text = src.read_text(encoding="utf-8")
+          text = text.replace("\r\n", "\n").replace("\r", "\n")
+          dst.write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
+          PY
+
+      - name: Smoke-Test Import
+        run: |
+          ASAN_OPTIONS=detect_leaks=0 ./build/import_smoke_test
+
+      - name: Smoke-Test Existing DB
+        run: |
+          ASAN_OPTIONS=detect_leaks=0 ./build/existing_db_smoke_test
+
+      - name: Dump smoke test database summaries
+        run: |
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT 'rule_hits', COUNT(*) FROM rule_hits;" >> build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT msg_log_id, decision, final_score FROM messages ORDER BY msg_log_id;" >> build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-score-lf.sqlite3 "SELECT phase, expression, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-score-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT 'rule_hits', COUNT(*) FROM rule_hits;" >> build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT msg_log_id, decision, final_score FROM messages ORDER BY msg_log_id;" >> build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-allowdeny-lf.sqlite3 "SELECT phase, expression, matched, is_negative, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-allowdeny-lf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/test-import-score-crlf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/test-import-score-crlf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT 'rule_hits', COUNT(*) FROM rule_hits;" >> build/test-import-score-crlf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT msg_log_id, decision, final_score FROM messages ORDER BY msg_log_id;" >> build/test-import-score-crlf-summary.txt
+          sqlite3 build/test-import-score-crlf.sqlite3 "SELECT phase, expression, score_delta FROM rule_hits ORDER BY id LIMIT 20;" >> build/test-import-score-crlf-summary.txt
+          sqlite3 tests/data/mailheader-test.sqlite3 "SELECT 'messages', COUNT(*) FROM messages;" > build/existing-db-summary.txt
+          sqlite3 tests/data/mailheader-test.sqlite3 "SELECT 'header_entries', COUNT(*) FROM header_entries;" >> build/existing-db-summary.txt
+          sqlite3 tests/data/mailheader-test.sqlite3 "SELECT 'rule_hits', COUNT(*) FROM rule_hits;" >> build/existing-db-summary.txt
+          sqlite3 tests/data/mailheader-test.sqlite3 "SELECT decision, COUNT(*) FROM messages GROUP BY decision ORDER BY decision;" >> build/existing-db-summary.txt
+          sqlite3 tests/data/mailheader-test.sqlite3 "SELECT msg_log_id, decision, final_score, subject FROM messages ORDER BY msg_log_id LIMIT 12;" >> build/existing-db-summary.txt
+          sqlite3 tests/data/mailheader-test.sqlite3 "SELECT msg_log_id, ordinal, tag FROM header_entries ORDER BY msg_log_id, ordinal LIMIT 20;" >> build/existing-db-summary.txt
+
+      - name: Upload smoke test database
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-db
+          path: |
+            build/test-import-score-lf.sqlite3
+            build/test-import-allowdeny-lf.sqlite3
+            build/test-import-score-crlf.sqlite3
+
+      - name: Upload smoke test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-summary
+          path: |
+            build/test-import-score-lf-summary.txt
+            build/test-import-allowdeny-lf-summary.txt
+            build/test-import-score-crlf-summary.txt
+            build/existing-db-summary.txt

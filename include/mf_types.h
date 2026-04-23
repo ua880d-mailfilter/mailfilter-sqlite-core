@@ -40,6 +40,84 @@ typedef struct mf_import_stats_t {
     int total_blocks_failed;
 } mf_import_stats_t;
 
+typedef struct mf_import_options_t {
+    /* Ziel-DB, in die importiert wird */
+    const char *target_db_path;
+
+    /* Optional: Schema aus vorhandener DB übernehmen */
+    const char *schema_from_db_path;
+
+    /* Optional: Prefix für erzeugte msg_log_id, z. B. "imp-" */
+    const char *id_prefix;
+
+    /* Optionaler Startwert für Laufnummern */
+    int start_serial;
+
+    /* Optionaler Decision-Text für importierte Datensätze */
+    const char *decision;
+
+    /* 1 = Ziel-DB vor dem Import zurücksetzen */
+    int reset_target_db;
+
+    /* 1 = Import direkt analysieren */
+    int analyze_after_import;
+
+    /* 1 = rule_hits beim Import füllen, falls Analyse aktiv */
+    int fill_rule_hits;
+
+    /* 1 = nur parsen/validieren, nichts schreiben */
+    int dry_run;
+} mf_import_options_t;
+
+typedef struct mf_message_summary_t {
+    char msg_log_id[64];
+    char decision[32];
+    int final_score;
+    char subject[512];
+    char date_hdr[128];
+    char created_at[32];
+    char from_addr[256];
+    char to_addr[256];
+} mf_message_summary_t;
+
+typedef struct mf_header_entry_t {
+    char msg_log_id[64];
+    int ordinal;
+    char tag[128];
+    char body[4096];
+} mf_header_entry_t;
+
+typedef struct mf_rule_hit_t {
+    char msg_log_id[64];
+    char phase[32];
+    char expression[512];
+    int is_negative;
+    int matched;
+    char header_tag[128];
+    char header_body[4096];
+    int normalized_subject;
+    int score_delta;
+} mf_rule_hit_t;
+
+typedef struct mf_rule_hit_agg_t {
+    char expression[512];
+    int hit_count;
+} mf_rule_hit_agg_t;
+
+typedef struct mf_rule_hit_tag_agg_t {
+    char expression[512];
+    char header_tag[128];
+    int hit_count;
+    int actual_matches;
+    double avg_score_impact;
+} mf_rule_hit_tag_agg_t;
+
+
+typedef struct mf_header_tag_agg_t {
+    char header_tag[128];
+    int message_count;
+} mf_header_tag_agg_t;
+
 #ifdef __cplusplus
 }
 #endif
