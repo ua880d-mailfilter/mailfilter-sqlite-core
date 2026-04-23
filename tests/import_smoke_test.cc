@@ -971,9 +971,13 @@ static int run_rule_hit_expression_tag_agg_check(
     const char *expected_expr0,
     const char *expected_tag0,
     int expected_hit_count0,
+    int expected_actual_matches0,
+    double expected_avg_score_impact0,
     const char *expected_expr1,
     const char *expected_tag1,
-    int expected_hit_count1
+    int expected_hit_count1,
+    int expected_actual_matches1,
+    double expected_avg_score_impact1
 ) {
     mf_error_t err = mf_open_existing_db(db_path, 1);
     if (err != MF_OK) {
@@ -1009,10 +1013,13 @@ static int run_rule_hit_expression_tag_agg_check(
 
     if (std::string(agg0.expression) != expected_expr0 ||
         std::string(agg0.header_tag) != expected_tag0 ||
-        agg0.hit_count != expected_hit_count0) {
+        agg0.hit_count != expected_hit_count0 ||
+        agg0.actual_matches != expected_actual_matches0 ||
+        agg0.avg_score_impact != expected_avg_score_impact0) {
         std::cerr << "unexpected first rule_hit expression_tag agg for " << db_path
                   << ": " << agg0.expression << "/" << agg0.header_tag
-                  << "/" << agg0.hit_count << "\n";
+                  << "/" << agg0.hit_count << "/" << agg0.actual_matches
+                  << "/" << agg0.avg_score_impact << "\n";
         mf_close_existing_db();
         return 124;
     }
@@ -1028,10 +1035,13 @@ static int run_rule_hit_expression_tag_agg_check(
 
     if (std::string(agg1.expression) != expected_expr1 ||
         std::string(agg1.header_tag) != expected_tag1 ||
-        agg1.hit_count != expected_hit_count1) {
+        agg1.hit_count != expected_hit_count1 ||
+        agg1.actual_matches != expected_actual_matches1 ||
+        agg1.avg_score_impact != expected_avg_score_impact1) {
         std::cerr << "unexpected second rule_hit expression_tag agg for " << db_path
                   << ": " << agg1.expression << "/" << agg1.header_tag
-                  << "/" << agg1.hit_count << "\n";
+                  << "/" << agg1.hit_count << "/" << agg1.actual_matches
+                  << "/" << agg1.avg_score_impact << "\n";
         mf_close_existing_db();
         return 126;
     }
@@ -1039,7 +1049,9 @@ static int run_rule_hit_expression_tag_agg_check(
     std::cout << "RULEHITTAGAGG file=" << db_path
               << " count=" << count
               << " agg0=" << agg0.expression << ":" << agg0.header_tag << ":" << agg0.hit_count
+              << ":" << agg0.actual_matches << ":" << agg0.avg_score_impact
               << " agg1=" << agg1.expression << ":" << agg1.header_tag << ":" << agg1.hit_count
+              << ":" << agg1.actual_matches << ":" << agg1.avg_score_impact
               << "\n";
 
     mf_close_existing_db();
@@ -1288,8 +1300,8 @@ int main() {
     rc = run_rule_hit_expression_tag_agg_check(
         "build/test-import-score-lf.sqlite3",
         3,
-        "^From:", "From", 2,
-        "^Received:", "Received", 2
+        "^From:", "From", 2, 2, -1.0,
+        "^Received:", "Received", 2, 2, 50.0
     );
     if (rc != 0) {
         return rc;
@@ -1298,8 +1310,8 @@ int main() {
     rc = run_rule_hit_expression_tag_agg_check(
         "build/test-import-allowdeny-lf.sqlite3",
         2,
-        "^Subject:.*Artemis", "Subject", 1,
-        "^Subject:.*Comes", "Subject", 1
+        "^Subject:.*Artemis", "Subject", 1, 1, 0.0,
+        "^Subject:.*Comes", "Subject", 1, 1, 0.0
     );
     if (rc != 0) {
         return rc;
@@ -1308,8 +1320,8 @@ int main() {
     rc = run_rule_hit_expression_tag_agg_check(
         "build/test-import-score-crlf.sqlite3",
         3,
-        "^From:", "From", 2,
-        "^Received:", "Received", 2
+        "^From:", "From", 2, 2, -1.0,
+        "^Received:", "Received", 2, 2, 50.0
     );
     if (rc != 0) {
         return rc;

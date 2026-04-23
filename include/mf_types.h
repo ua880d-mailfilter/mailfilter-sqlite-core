@@ -108,6 +108,8 @@ typedef struct mf_rule_hit_tag_agg_t {
     char expression[512];
     char header_tag[128];
     int hit_count;
+    int actual_matches;
+    double avg_score_impact;
 } mf_rule_hit_tag_agg_t;
 
 #ifdef __cplusplus

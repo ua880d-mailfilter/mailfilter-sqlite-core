@@ -711,12 +711,15 @@ mf_error_t mf_db_get_rule_hit_expression_tag_agg_at(
     std::memset(out_agg, 0, sizeof(*out_agg));
 
     const char *sql =
-        "SELECT expression, header_tag, COUNT(*) AS hit_count "
-        "FROM rule_hits "
-        "WHERE matched = 1 "
-        "GROUP BY expression, header_tag "
-        "ORDER BY hit_count DESC, expression ASC, header_tag ASC "
-        "LIMIT 1 OFFSET ?;";
+          const char *sql =
+            "SELECT expression, header_tag, COUNT(*) AS hit_count, "
+            "SUM(CASE WHEN matched THEN 1 ELSE 0 END) AS actual_matches, "
+            "AVG(score_delta) AS avg_score_impact "
+            "FROM rule_hits "
+            "WHERE matched = 1 "
+            "GROUP BY expression, header_tag "
+            "ORDER BY hit_count DESC, expression ASC, header_tag ASC "
+            "LIMIT 1 OFFSET ?;";
 
     sqlite3_stmt *stmt = nullptr;
     if (sqlite3_prepare_v2(g_external_db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -739,6 +742,8 @@ mf_error_t mf_db_get_rule_hit_expression_tag_agg_at(
             sqlite3_column_text(stmt, 1)
         );
         out_agg->hit_count = sqlite3_column_int(stmt, 2);
+        out_agg->actual_matches = sqlite3_column_int(stmt, 3);
+        out_agg->avg_score_impact = sqlite3_column_double(stmt, 4);
         err = MF_OK;
     }
 
