@@ -1412,10 +1412,12 @@ int main() {
         return rc;
     }
 
+// ------>
+
     rc = run_header_tag_agg_check(
         "build/test-import-score-lf.sqlite3",
-        8,
-        "Delivery-date", 2,
+        9,
+        "Date", 2,
         "From", 2
     );
     if (rc != 0) {
@@ -1434,8 +1436,8 @@ int main() {
 
     rc = run_header_tag_agg_check(
         "build/test-import-score-crlf.sqlite3",
-        8,
-        "Delivery-date", 2,
+        9,
+        "Date", 2,
         "From", 2
     );
     if (rc != 0) {
