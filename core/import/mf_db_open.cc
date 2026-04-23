@@ -771,7 +771,7 @@ mf_error_t mf_db_get_header_tag_agg_count(int *out_count)
         "  SELECT he.tag "
         "  FROM header_entries he "
         "  JOIN messages m ON he.msg_log_id = m.msg_log_id "
-        "    AND m.decision IN ('pass', 'score') "
+        "    WHERE m.decision IN ('pass', 'score') "
         "  GROUP BY he.tag"
         ");";
 
@@ -815,7 +815,7 @@ mf_error_t mf_db_get_header_tag_agg_at(
         "COUNT(DISTINCT he.msg_log_id) AS message_count "
         "FROM header_entries he "
         "JOIN messages m ON he.msg_log_id = m.msg_log_id "
-        "  AND m.decision IN ('pass', 'score') "
+        " WHERE m.decision IN ('pass', 'score') "
         "GROUP BY he.tag "
         "ORDER BY message_count DESC, header_tag ASC "
         "LIMIT 1 OFFSET ?;";
