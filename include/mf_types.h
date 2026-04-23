@@ -104,6 +104,11 @@ typedef struct mf_rule_hit_agg_t {
     int hit_count;
 } mf_rule_hit_agg_t;
 
+typedef struct mf_rule_hit_tag_agg_t {
+    char expression[512];
+    char header_tag[128];
+    int hit_count;
+} mf_rule_hit_tag_agg_t;
 
 #ifdef __cplusplus
 }
