@@ -1089,6 +1089,16 @@ static int run_header_tag_agg_check(
         return 132;
     }
 
+// Ist 0 ?- ->
+    if (expected_count == 0) {
+        std::cout << "HEADERTAGAGG file=" << db_path
+                  << " count=0"
+                  << "\n";
+        mf_close_existing_db();
+        return 0;
+    }
+// Ende ist 0
+
     mf_header_tag_agg_t agg0{};
     err = mf_get_header_tag_agg_at(0, &agg0);
     if (err != MF_OK) {
@@ -1410,14 +1420,6 @@ int main() {
     );
     if (rc != 0) {
         return rc;
-    }
-
-    if (expected_count == 0) {
-        std::cout << "HEADERTAGAGG file=" << db_path
-                  << " count=0"
-                  << "\n";
-        mf_close_existing_db();
-        return 0;
     }
 
     rc = run_header_tag_agg_check(
